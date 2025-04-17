@@ -1,4 +1,4 @@
-# Completeness Assessment of the Slave Voyages Dataset
+# Historical Silences: Completeness Assessment of the Slave Voyages Dataset
 
 This repository contains a solo data analysis project focused on evaluating the **completeness of key demographic fields** within the [Slave Voyages](https://www.slavevoyages.org/) dataset. The analysis investigates gaps in records related to **embarkation, disembarkation, and mortality**—especially among **women and girls**—across decades and geographic regions.
 
