@@ -1,0 +1,3333 @@
+---
+title: "Historical Silences: Completeness Assessment of the Slave Voyages Dataset"
+author: "Edward Parlati"
+date: "`r Sys.Date()`"
+
+---
+
+#### **1. Project Background & Purpose**
+
+The **Slave Voyages Project** is a long-standing scholarly initiative dedicated to documenting the transatlantic slave trade through structured data. With thousands of records spanning centuries and continents, the dataset has become a cornerstone resource for historians and educators exploring the history of slavery and migration in the Atlantic world.
+
+While the dataset is publicly available and remarkably comprehensive, it reflects the unevenness of historical recordkeeping. Fields like gender, age, or mortality are inconsistently populated. Some voyages are richly detailed; others are fragmentary. For historians new to the dataset, this inconsistency raises a practical question:
+
+**Which parts of the dataset are most complete, and therefore most trustworthy for historical interpretation?**
+
+This project provides a field-by-field and table-by-table **completeness audit** of the dataset. It does not seek to interpret the historical content directly. Instead, it supports others who do by offering transparency about where the data is strong, where it is sparse, and how it can be joined across tables. The goal is to provide clarity, reduce guesswork, and support the broader mission of responsible, data-driven historical research.
+
+***
+
+#### **2. Project Scope & Objectives**
+
+This audit focuses on evaluating the **completeness, consistency, and joinability** of the Slave Voyages dataset across its nine relational tables. It is structured as a practical guide for historians, educators, and data stewards working with the dataset at varying levels of familiarity.
+
+**Objectives**
+
+-	Assess **field-level and table-level completeness** using null counts and non-null percentages
+-	Track **temporal coverage** of key fields to identify strong and weak periods of data collection
+-	Evaluate **relational join integrity** between tables (e.g., voyages to captains, ships, ports)
+-	Provide **analysis-ready recommendations** for researchers selecting subsets of the data
+
+**Evaluation Criteria**
+
+-	**% completeness per column** across all nine tables
+-	**Time range consistency** in date fields like departure and arrival years
+-	**Join reliability** across relational keys (e.g., voyage ID, port codes)
+-	Documentation of **inconsistencies**, formatting legacy issues, and decoded categorical values
+
+**Tools & Workflow**
+
+The data was originally sourced as an SPSS .sav file. Using **R**, the dataset was cleaned, decoded using the original SPSS codebook, and split into CSVs representing each relational table. From there, the tables were loaded into **BigQuery*** for SQL-based completeness analysis.
+
+This process allowed for:
+
+-	Consistent handling of nulls and placeholder values
+-	Field-level aggregation of completeness statistics
+-	Sampling of relational joins to assess table integrity
+-	Export of results into reproducible, documented outputs
+
+**Intended Use**
+
+This audit is designed to support the **historians and educators** who rely on this dataset for research and teaching. It also offers feedback to the **Slave Voyages Project team** that may inform future data maintenance, documentation, or user support.
+
+The results are not conclusive but directional—offering a clearer path forward for users working with this unique and powerful historical dataset.
+
+***
+
+#### **3. Data Overview**
+
+**Archival Origins**
+
+The Slave Voyages dataset is a cumulative scholarly resource, built from decades of independent and collaborative research across the Atlantic world. The intra-American portion of the database—the focus of this audit—reflects contributions from dozens of historians, drawing from sources as varied as shipping manifests, colonial reports, merchant correspondence, port registries, and newspapers.
+
+The underlying records come from **a vast geography and timeframe**, and have been consolidated through an evolving data model centered around individual slave voyages. Each entry in the dataset is sourced from at least one archival record, with many corroborated by multiple sources. In cases where records conflict—as often happens when one source documents departure and another arrival—the project has preserved the data, inviting further scholarly interpretation.
+
+This audit does not question the reliability of those records. Instead, it seeks to understand **how complete and consistent** the available data is across fields like gender, mortality, ports, and dates, and to identify **where those gaps occur over time**.
+
+**Dataset Structure**
+
+The full dataset was originally delivered in SPSS format (.sav) and contains **nine relational tables**, including voyages, ships, captains, ports, transactions, and enslaved individuals. For this project, the dataset was exported to .csv, decoded using the SPSS codebook, and loaded into BigQuery for SQL-based analysis. The structure preserves relational joins through primary and foreign keys, many of which required cleaning and standardization due to legacy academic formatting.
+
+To make this data analyzable and auditable, we applied a standardized cleaning process across all tables, documented below.
+
+**Lookup Tables and Their Purpose**
+
+To support a normalized data model and ensure consistency across analyses, a series of **lookup tables** were created during the transformation process. These tables serve as reference sheets that decode numerical or abbreviated values—such as region codes, vessel types, or outcome categories—into human-readable labels.
+
+The use of lookup tables fulfills several purposes:
+
+-	**Improved legibility:** Historians and analysts can work with clear, descriptive terms rather than memorizing coded values.
+-	**Reduced redundancy:** Instead of repeating long text strings across thousands of records, coded values point to centralized reference entries.
+-	**Reliable joins:** Lookup tables enable clean and repeatable joins between fact tables and categorical descriptors, which is essential in SQL-based analysis.
+-	**Historical fidelity:** Many of the original codes (e.g., for regions or ship rigging types) reflect scholarly decisions baked into the SPSS source file. By decoding these into structured tables, we preserved both the original logic and its usability.
+
+These tables function as the interpretive bridge between the archival coding practices embedded in the original dataset and the analytical work carried out in BigQuery and R. Without them, querying and slicing the data would be error-prone or opaque.
+
+***
+
+#### **4. Data Preparation and Cleaning**
+
+**Preparation and Cleaning Approach**
+
+All placeholder nulls (such as -99, "N/A", or blanks) were standardized as missing values. Encoded fields were decoded using the official codebook provided by the project team. Where inconsistencies in column naming or data types existed, schema normalization was applied to ensure compatibility across tables and to support reliable joining.
+
+The transformation process emphasized **preservation of archival intent** while enabling the use of modern data tooling to evaluate completeness. Beyond standard cleaning, the process included **renaming and verifying column names, converting data types** (particularly for dates, numeric fields, and identifiers), and removing duplicates. Each table was cleaned using a consistent function in R that trimmed whitespace, standardized text casing, and replaced empty strings with NA. After transformation, **foreign keys were tested** to ensure join consistency across related tables. Finally, an **Entity Relationship Diagram (ERD)** was created to confirm table structure and guide relational analysis throughout the completeness audit. For the complete R code used for this project, see Appendix A.
+
+**Notes on Completeness Challenges**
+
+The dataset's richness also reveals its unevenness. Some sources provide highly granular information, including demographic detail, while others offer aggregate totals or record only the fact of a voyage without many additional attributes. These gaps do not reflect a failure in data curation—they represent the historical silences inherent in the sources themselves. This audit is meant to make those silences visible, so future users can engage with the dataset more **responsibly** and **effectively**.
+
+***
+
+#### **5. Completeness Audit and Exploratory Analysis**
+
+**Approach and Structure of Analysis**
+
+To bring those silences into focus, this phase assesses the dataset's completeness through two complementary approaches: a **full-dataset overview** and a **focused demographic case study**. The goal is to make the Slave Voyages dataset more measurable, navigable, and useful—offering both a wide-angle audit and a practical demonstration of how completeness shapes interpretive potential.
+
+The **first mode of analysis** examines the dataset as a whole. It **documents field-level completeness across all nine relational tables**, calculating the percentage of non-null values for each field and identifying patterns in coverage. These findings help users quickly identify which fields are broadly reliable, which are inconsistently populated, and which may require filtering or caution in analysis.
+
+The **second mode of analysis** is a targeted case study exploring **demographic data**—**specifically gender and age**. This section investigates how often enslaved women and girls are recorded at embarkation, disembarkation, or in mortality fields. It examines how these patterns shift by decade and region, illustrating how slicing completeness by context can surface new layers of meaning—and identify research-ready subsets of the data.
+
+This **dual structure** meets the needs of both technical data stewards and historical researchers. It shows not just **how complete the dataset is**, but **how that completeness matters** across different research approaches.
+
+**Data Completeness Overview**
+
+The first phase of analysis evaluates the completeness of the Slave Voyages dataset at scale. This overview involved assessing the percentage of non-null entries for each field across all nine relational tables. The result is a bulk completeness audit, designed to show where data coverage is strong, where it is sparse, and where it may be misleading due to placeholder or legacy values.
+
+Each field was analyzed using SQL to calculate the ratio of non-null values to total records. Fields with high completeness (e.g., ship_name, departure_region, voyage_start_year) were identified as reliable anchors for analysis, while low-completeness fields (e.g., multi-owner data, age and gender in the enslaved table) were flagged as cautionary or context-dependent. In total, over 270 fields were evaluated. For a more complete look at how SQL was utilized in creating Completeness Scorecards, see Appendix B.
+
+To support interpretation, the results are presented in segmented scorecards—one per relational table—allowing researchers to scan for usable variables by theme (e.g., logistics, geography, demographics). While the full set of percentages is included in Appendix C, this section provides a high-level summary of patterns and trends identified through the audit.
+
+Several general observations emerged:
+
+- **Core logistical fields** such as ship name, departure year, and tonnage have moderate-to-high completeness, though secondary ship information (e.g., construction details, tertiary owners) drops off significantly.
+-	**Geographic fields** are often present, but coded in multiple ways across tables, requiring harmonization.
+-	**Demographic fields** such as gender and age exist in both summary and individual forms and are inconsistently populated.
+-	**Mortality and transaction fields** have wide variance in completeness, often depending on region or decade.
+
+This audit offers a foundational map of the dataset’s structure and gaps. It enables researchers to ask more informed questions about the data and prepares the ground for deeper analysis—such as the demographic case study that follows.
+
+***
+
+#### **6. Case Study: Analysis of Gender and Age Completeness in Slave Voyages Dataset by Decade and Region**
+
+**Overview**
+
+This case study investigates the completeness of gender- and age-specific data in the Slave Voyages dataset, with particular attention to how those patterns shift across time and geography. It focuses on the visibility of women and girls in key voyage events—embarkation, disembarkation, and death—and identifies when and where such data becomes more prevalent. The goal is not to fill in the archival silences, but to make those silences visible, helping researchers identify usable segments of the dataset and approach gaps with historical caution.
+
+**Temporal Trends in Completeness**
+
+Across the full dataset timeline (1510–1860), general completeness for embarkation and disembarkation fields remains consistently high—usually between 95% and 100%. This makes those fields reliable anchors for analysis across centuries. However, in the final three decades of the dataset, completeness for these same fields drops significantly, to approximately 65–70%. This decline likely corresponds with the suppression of the slave trade and the growing clandestine nature of voyages, reducing the frequency and quality of recorded information.
+
+<img src="https://github.com/edwardparlati/slave-voyages-completeness-audit/blob/main/visuals/1_decade.jpg?raw=true">
+ 
+###### **Figure 1: Completeness Trends by Record Type (1510–1860)**
+###### Embarkation and disembarkation fields remain highly complete until a sharp decline in the final three decades. Death records are significantly less complete throughout, peaking in the 1820s (40.84%) and 1790s (29.63%), with near-total absence in earlier centuries.
+
+Death data presents a striking contrast. Completeness in mortality fields is consistently low throughout the dataset’s timeline, with values rarely exceeding 30–40%. The most complete decade for death-related data is the 1820s, reaching a high of 40.84%, followed by the 1790s at 29.63%. In the earliest centuries, however, death data is virtually absent—an archival silence that complicates any attempt to quantify loss or suffering during these voyages. Gendered mortality data is almost entirely missing, with most fields registering below 1% completeness.
+
+**Gendered Patterns Across Time**
+
+When gender is introduced as a filter, completeness drops sharply. For both male and female passengers, embarkation and disembarkation data remain under 30% complete in all decades, with some minor gains in the late 1600s and more consistent (though still limited) entries beginning in the late 1700s. The decade of 1670 stands out briefly, with both male and female disembarkation completeness peaking at 27.70%, before falling again in subsequent decades.
+
+<img src="https://github.com/edwardparlati/slave-voyages-completeness-audit/blob/main/visuals/2_gender.jpg?raw=true">
+
+###### **Figure 2: Disembarkation completeness by decade, comparing total records to those identifying women.**
+###### While overall disembarkation completeness remains consistently high through most of the dataset, records that explicitly identify women are dramatically less complete. The 1670s mark the only decade where female disembarkation completeness briefly approaches 28%, but even this peak is less than a third of the total data for that decade. Across the timeline, the visibility of women in disembarkation records remains limited and inconsistent.
+
+Records for girls are even scarcer. Embarkation fields for girls begin appearing in the 1640s but remain below 5% completeness for most of the timeline. Disembarkation data shows modest improvement, peaking in the 1790s (20.83%) and 1810s (21.49%). Death records for girls are essentially nonexistent; the 1790s mark the highest point, at just 1.91% completeness.
+
+These patterns suggest that gendered demographic data becomes meaningfully available only in the late 18th and early 19th centuries. Prior to that, the dataset offers little usable information on the identities or experiences of enslaved women and girls.
+
+**Geographic Variation in Completeness**
+
+Regional analysis further clarifies these patterns. Disembarkation records are strongest in the Spanish Mainland Americas (98.9%), Brazil (97.9%), and Africa (96.0%). In contrast, embarkation records are severely lacking across all regions. Africa, despite being the dominant embarkation point in the trade, has 0% completeness for total embarkation fields in the regional summary data. Only the Caribbean (0.58%) and Asia (0.44%) offer nonzero values.
+
+When filtered by gender and age, the Caribbean consistently emerges as the most data-rich region. It features the highest completeness for girl disembarkation fields and relatively better representation of female records. Other regions such as Brazil and Mainland North America show isolated gains in specific decades but lack consistent visibility for women and girls across the full dataset.
+
+**Region-Decade Intersections**
+
+The intersection of time and place produces clearer targets for focused analysis. The pivot tables show that certain combinations—such as the Caribbean in the 1790s—yield relatively high completeness in gendered fields, especially for girls. In contrast, Africa during the same period, while heavily trafficked, remains data-poor for gender-specific information. Brief spikes in completeness (e.g., female embarkation in Africa during the 1750s) do appear, but they lack the sustained presence needed for longitudinal study.
+
+<img src="https://github.com/edwardparlati/slave-voyages-completeness-audit/blob/main/visuals/3_pivot.jpg?raw=true">
+
+###### **Figure 3: Girl Disembarkation Completeness by Decade and Region.**
+###### This heatmap reveals the extreme scarcity of girl-specific disembarkation records across space and time. A single voyage to Europe in the 1710s stands as an outlier in an otherwise silent century, while the Caribbean in the 1810s marks the dataset’s peak at 55.9%—a rare instance of near-majority representation.
+
+Taken together, these trends suggest that completeness is not just a matter of time or geography, but of their overlap. The most usable data emerges where these dimensions converge—particularly in the Caribbean and Brazil during the 1790–1820 window.
+
+**Implications for Case Study Design**
+
+This analysis recommends focusing case studies on regions and decades where gender and age data is most complete. The Caribbean during the 1790s and 1810s offers the strongest foundation for exploring the experiences of enslaved girls, supported by relatively high completeness in disembarkation fields. Brazil also offers useful data during this window, particularly when paired with voyage-level context. Conversely, earlier periods and African embarkation records remain fragmentary, limiting their utility for demographic study.
+
+***
+
+#### **7. Interpreting Completeness: Key Findings and Implications**
+
+By identifying these stronger intersections of time and region, researchers can select data slices that maximize interpretive potential while maintaining historical fidelity. This approach respects the dataset’s limitations while still uncovering meaningful patterns.
+
+The completeness audit was conducted not only to assess where data is present, but to illuminate how its distribution affects interpretive potential. By examining the dataset as a whole and then narrowing in on gender and age, this analysis illustrates both the richness and the unevenness of the historical record. The resulting patterns offer a fuller understanding of what the dataset can—and cannot—tell us about the transatlantic and intra-American slave trades.
+
+Key findings from the audit help frame these limits and opportunities:
+
+-	**Structural fields** such as ship_name, departure_year, and tonnage_type were found to be highly complete and consistent across the dataset.
+-	**Demographic fields** such as gender and age were significantly less complete, especially in earlier periods or in certain regions. However, a noticeable improvement in data quality appears after 1780.
+-	**Completeness patterns** vary not only by variable but also by time and geography, underscoring the need for contextual awareness when using the data.
+
+Visualizations of completeness by decade and region revealed important trends, including pockets of highly reliable demographic data and areas of systematic absence. These findings support researchers in making informed decisions about filtering, joining, or interpreting data depending on their line of inquiry.
+
+The completeness audit ultimately serves as a decision-making tool. It empowers historians and data stewards to work with the Slave Voyages dataset more critically, helping to match the scope of a research question to the scope of available data. It also identifies areas where further data curation or enrichment could have a meaningful impact on usability.
+
+The next and final section turns these findings toward practical application, offering recommendations for responsible use, future refinement, and continued collaboration with the dataset's evolving structure and mission.
+
+***
+
+#### **8. Navigating the Dataset: Insights and Next Steps**
+
+The completeness audit is not a final verdict on the Slave Voyages dataset, but rather a tool—an interpretive guide to help researchers, educators, and curators better anticipate the terrain of their inquiry. By surfacing patterns in what data is present, where gaps exist, and how completeness shifts over time and region, this project offers a framework for evaluating the analytical readiness of the archive.
+
+For historians new to the dataset, this audit serves as a forecast: a way to assess which lines of inquiry are supported by strong underlying data and which may encounter archival silences. Rather than prescribing how the dataset should be used, the audit empowers users to make informed, responsible choices about filtering, segmenting, or combining fields in their analysis.
+
+For data stewards and curators, the audit highlights areas of strength that can be showcased and areas of fragility that might be prioritized for future enrichment. It also serves as a repeatable model—a methodology that can be extended as the dataset grows or as new questions arise.
+
+The final conclusion of this analysis is not numerical but practical: **completeness matters**. It shapes how research questions are framed, how results are interpreted, and how confidently insights can be shared. By making completeness visible, this project invites more transparent, more critical, and ultimately more effective engagement with one of the most important historical datasets in the digital humanities.
+
+The next step is not to close the dataset, but to open it—to continued analysis, thoughtful use, and collaborative refinement informed by the patterns this audit has revealed.
+
+***
+
+#### **Appendix A: R Scripts and Functions**
+
+This appendix includes a core function used during the data cleaning and standardization phase of this project. It was applied to each of the nine raw tables to enforce consistent formatting, normalize null values, and prepare the data for export and analysis.
+
+Additional helper functions, including foreign key validators and lookup table transformations, are available in the <a href="https://github.com/edwardparlati/slave-voyages-completeness-audit/tree/main/scripts">scripts</a> section of the project repository or upon request.
+
+```r
+clean_table <- function(df) {
+  df <- df %>%
+  
+    # Trim whitespace from character columns
+    mutate(across(where(is.character), stringr::str_trim)) %>%
+    
+    # Convert empty strings to NA
+    mutate(across(where(is.character), ~ na_if(., ""))) %>%
+    
+    # Remove extra internal spacing from text
+    mutate(across(where(is.character), stringr::str_squish)) %>%
+    
+    # Convert character text to title case
+    mutate(across(where(is.character), stringr::str_to_title)) %>%
+    
+    # Standardize known data types
+    mutate(voyage_id = as.integer(voyage_id)) %>%
+    mutate(across(contains("date"), \(x) as.Date(x, format = "%Y-%m-%d"))) %>%
+    mutate(across(where(is.numeric), as.numeric))
+  
+  # Convert 'evergreen' column to logical, if present
+  if ("evergreen" %in% colnames(df)) {
+    df <- df %>% mutate(evergreen = as.logical(evergreen))
+  }
+  
+  # Remove duplicates based on voyage_id
+  df <- df %>% distinct(voyage_id, .keep_all = TRUE)
+  
+  return(df)
+}
+```
+
+***
+
+#### **Appendix B: Entity Relationship Diagram (ERD)**
+
+<img src="https://github.com/edwardparlati/slave-voyages-completeness-audit/blob/main/visuals/4_erd.jpg?raw=true">
+
+***
+
+#### **Appendix C: SQL Query Library**
+
+This appendix contains the primary SQL queries used to assess data completeness across time, geography, and demographic dimensions. The SQL Query Library is split into three separate sections:
+
+1.	Queries for chronological analysis
+2.	Queries for geographical analysis
+3.	Queries relating chronological and geographical analysis
+
+All queries were executed in Google BigQuery and reference the cleaned relational schema described in Appendix B.
+
+<div style="border:1px solid #ccc; padding:10px; background-color:#f9f9f9; overflow-x:auto;">
+<strong>Query: Completeness by Decade</strong>
+
+```sql
+-- Total Embarkation by Decade
+SELECT
+  FLOOR(d.voyage_start_imputed_year / 10) * 10 AS decade,
+  COUNT(s.slaves_embarked_total) / COUNT(*) * 100 AS embarkation_completeness_pct
+FROM `slave_voyages.voyages_slave_numbers` s
+JOIN `slave_voyages.voyages_dates` d
+  ON s.voyage_id = d.voyage_id
+GROUP BY decade
+ORDER BY decade;
+
+-- Total Disembarkation by Decade
+SELECT
+  FLOOR(d.voyage_start_imputed_year / 10) * 10 AS decade,
+  COUNT(s.slaves_disembarked_total) / COUNT(*) * 100 AS disembarkation_completeness_pct
+FROM `slave_voyages.voyages_slave_numbers` s
+JOIN `slave_voyages.voyages_dates` d
+  ON s.voyage_id = d.voyage_id
+GROUP BY decade
+ORDER BY decade;
+
+-- Total Deaths Completeness by Decade
+SELECT
+  FLOOR(d.voyage_start_imputed_year / 10) * 10 AS decade,
+  COUNT(c.slave_death_total_derived) / COUNT(*) * 100 AS death_completeness_pct
+FROM `slave_voyages.voyages_slave_characteristics` c
+JOIN `slave_voyages.voyages_dates` d
+  ON c.voyage_id = d.voyage_id
+GROUP BY decade
+ORDER BY decade;
+
+-- Male vs Female Embarkation Completeness by Decade
+SELECT
+  FLOOR(d.voyage_start_imputed_year / 10) * 10 AS decade,
+  COUNT(c.male_embark_total) / COUNT(*) * 100 AS male_embark_pct,
+  COUNT(c.female_embark_total) / COUNT(*) * 100 AS female_embark_pct
+FROM `slave_voyages.voyages_slave_characteristics` c
+JOIN `slave_voyages.voyages_dates` d
+  ON c.voyage_id = d.voyage_id
+GROUP BY decade
+ORDER BY decade;
+
+-- Male vs Female Disembarkation Completeness by Decade
+SELECT
+  FLOOR(d.voyage_start_imputed_year / 10) * 10 AS decade,
+  COUNT(c.male_arrival_total) / COUNT(*) * 100 AS male_disembark_pct,
+  COUNT(c.female_arrival_total) / COUNT(*) * 100 AS female_disembark_pct
+FROM `slave_voyages.voyages_slave_characteristics` c
+JOIN `slave_voyages.voyages_dates` d
+  ON c.voyage_id = d.voyage_id
+GROUP BY decade
+ORDER BY decade;
+
+-- Male vs Female Deaths Completeness by Decade
+SELECT
+  FLOOR(d.voyage_start_imputed_year / 10) * 10 AS decade,
+  COUNT(c.male_death_passage) / COUNT(*) * 100 AS male_death_pct,
+  COUNT(c.female_death_passage) / COUNT(*) * 100 AS female_death_pct
+FROM `slave_voyages.voyages_slave_characteristics` c
+JOIN `slave_voyages.voyages_dates` d
+  ON c.voyage_id = d.voyage_id
+GROUP BY decade
+ORDER BY decade;
+
+-- Girl Embarkation Completeness by Decade
+SELECT
+  FLOOR(d.voyage_start_imputed_year / 10) * 10 AS decade,
+  COUNT(c.girl_embark_port1) / COUNT(*) * 100 AS girl_embark_pct
+FROM `slave_voyages.voyages_slave_characteristics` c
+JOIN `slave_voyages.voyages_dates` d
+  ON c.voyage_id = d.voyage_id
+GROUP BY decade
+ORDER BY decade;
+
+-- Girl Disembarkation Completeness by Decade
+SELECT
+  FLOOR(d.voyage_start_imputed_year / 10) * 10 AS decade,
+  COUNT(c.girl_arrival_total) / COUNT(*) * 100 AS girl_disembark_pct
+FROM `slave_voyages.voyages_slave_characteristics` c
+JOIN `slave_voyages.voyages_dates` d
+  ON c.voyage_id = d.voyage_id
+GROUP BY decade
+ORDER BY decade;
+
+-- Girl Deaths Completeness by Decade
+SELECT
+  FLOOR(d.voyage_start_imputed_year / 10) * 10 AS decade,
+  COUNT(c.girl_died_passage) / COUNT(*) * 100 AS girl_death_pct
+FROM `slave_voyages.voyages_slave_characteristics` c
+JOIN `slave_voyages.voyages_dates` d
+  ON c.voyage_id = d.voyage_id
+GROUP BY decade
+ORDER BY decade;
+```
+</div>
+
+<div style="border:1px solid #ccc; padding:10px; background-color:#f9f9f9; overflow-x:auto;">
+<strong>Query: Completeness by Region</strong>
+
+```sql
+-- Total Disembarkation Completeness by Broad Region
+WITH disembark_regions AS (
+  SELECT
+    i.voyage_id,
+    CAST(SUBSTR(CAST(i.primary_disembark_port AS STRING), 0, 1) AS INT64) * 10000 AS broad_region_code
+  FROM `slave_voyages.voyages_itinerary` i
+  WHERE i.primary_disembark_port IS NOT NULL
+),
+labeled_regions AS (
+  SELECT DISTINCT broad_region_value, broad_region
+  FROM `slave_voyages.lookup_voyages_geographic_codes`
+),
+completeness AS (
+  SELECT
+    r.broad_region,
+    COUNT(s.slaves_disembarked_total) / COUNT(*) * 100 AS disembarkation_completeness_pct
+  FROM `slave_voyages.voyages_slave_numbers` s
+  JOIN disembark_regions i ON s.voyage_id = i.voyage_id
+  JOIN labeled_regions r ON i.broad_region_code = r.broad_region_value
+  GROUP BY r.broad_region
+)
+SELECT * FROM completeness
+ORDER BY disembarkation_completeness_pct DESC;
+
+-- Total Embarkation Completeness by Broad Region
+WITH disembark_regions AS (
+  SELECT
+    i.voyage_id,
+    CAST(SUBSTR(CAST(i.primary_disembark_port AS STRING), 0, 1) AS INT64) * 10000 AS broad_region_code
+  FROM `slave_voyages.voyages_itinerary` i
+  WHERE i.primary_disembark_port IS NOT NULL
+),
+labeled_regions AS (
+  SELECT DISTINCT broad_region_value, broad_region
+  FROM `slave_voyages.lookup_voyages_geographic_codes`
+),
+completeness AS (
+  SELECT
+    r.broad_region,
+    COUNT(s.slaves_embarked_total) / COUNT(*) * 100 AS embarkation_completeness_pct
+  FROM `slave_voyages.voyages_slave_numbers` s
+  JOIN disembark_regions i ON s.voyage_id = i.voyage_id
+  JOIN labeled_regions r ON i.broad_region_code = r.broad_region_value
+  GROUP BY r.broad_region
+)
+SELECT * FROM completeness
+ORDER BY embarkation_completeness_pct DESC;
+
+-- Total Deaths Completeness by Broad Region
+WITH disembark_regions AS (
+  SELECT
+    i.voyage_id,
+    CAST(SUBSTR(CAST(i.primary_disembark_port AS STRING), 0, 1) AS INT64) * 10000 AS broad_region_code
+  FROM `slave_voyages.voyages_itinerary` i
+  WHERE i.primary_disembark_port IS NOT NULL
+),
+labeled_regions AS (
+  SELECT DISTINCT broad_region_value, broad_region
+  FROM `slave_voyages.lookup_voyages_geographic_codes`
+),
+completeness AS (
+  SELECT
+    r.broad_region,
+    COUNT(c.slave_death_total_derived) / COUNT(*) * 100 AS death_completeness_pct
+  FROM `slave_voyages.voyages_slave_characteristics` c
+  JOIN disembark_regions i ON c.voyage_id = i.voyage_id
+  JOIN labeled_regions r ON i.broad_region_code = r.broad_region_value
+  GROUP BY r.broad_region
+)
+SELECT * FROM completeness
+ORDER BY death_completeness_pct DESC;
+
+-- Male vs Female Embarkation Completeness by Broad Region
+WITH disembark_regions AS (
+  SELECT
+    i.voyage_id,
+    CAST(SUBSTR(CAST(i.primary_disembark_port AS STRING), 0, 1) AS INT64) * 10000 AS broad_region_code
+  FROM `slave_voyages.voyages_itinerary` i
+  WHERE i.primary_disembark_port IS NOT NULL
+),
+labeled_regions AS (
+  SELECT DISTINCT broad_region_value, broad_region
+  FROM `slave_voyages.lookup_voyages_geographic_codes`
+),
+completeness AS (
+  SELECT
+    r.broad_region,
+    COUNT(c.male_embark_total) / COUNT(*) * 100 AS male_embark_pct,
+    COUNT(c.female_embark_total) / COUNT(*) * 100 AS female_embark_pct
+  FROM `slave_voyages.voyages_slave_characteristics` c
+  JOIN disembark_regions i ON c.voyage_id = i.voyage_id
+  JOIN labeled_regions r ON i.broad_region_code = r.broad_region_value
+  GROUP BY r.broad_region
+)
+SELECT * FROM completeness
+ORDER BY broad_region;
+
+-- Male vs Female Disembarkation Completeness by Broad Region
+WITH disembark_regions AS (
+  SELECT
+    i.voyage_id,
+    CAST(SUBSTR(CAST(i.primary_disembark_port AS STRING), 0, 1) AS INT64) * 10000 AS broad_region_code
+  FROM `slave_voyages.voyages_itinerary` i
+  WHERE i.primary_disembark_port IS NOT NULL
+),
+labeled_regions AS (
+  SELECT DISTINCT broad_region_value, broad_region
+  FROM `slave_voyages.lookup_voyages_geographic_codes`
+),
+completeness AS (
+  SELECT
+    r.broad_region,
+    COUNT(c.male_arrival_total) / COUNT(*) * 100 AS male_disembark_pct,
+    COUNT(c.female_arrival_total) / COUNT(*) * 100 AS female_disembark_pct
+  FROM `slave_voyages.voyages_slave_characteristics` c
+  JOIN disembark_regions i ON c.voyage_id = i.voyage_id
+  JOIN labeled_regions r ON i.broad_region_code = r.broad_region_value
+  GROUP BY r.broad_region
+)
+SELECT * FROM completeness
+ORDER BY broad_region;
+
+-- Male vs Female Deaths Completeness by Broad Region
+WITH disembark_regions AS (
+  SELECT
+    i.voyage_id,
+    CAST(SUBSTR(CAST(i.primary_disembark_port AS STRING), 0, 1) AS INT64) * 10000 AS broad_region_code
+  FROM `slave_voyages.voyages_itinerary` i
+  WHERE i.primary_disembark_port IS NOT NULL
+),
+labeled_regions AS (
+  SELECT DISTINCT broad_region_value, broad_region
+  FROM `slave_voyages.lookup_voyages_geographic_codes`
+),
+completeness AS (
+  SELECT
+    r.broad_region,
+    COUNT(c.male_death_passage) / COUNT(*) * 100 AS male_death_pct,
+    COUNT(c.female_death_passage) / COUNT(*) * 100 AS female_death_pct
+  FROM `slave_voyages.voyages_slave_characteristics` c
+  JOIN disembark_regions i ON c.voyage_id = i.voyage_id
+  JOIN labeled_regions r ON i.broad_region_code = r.broad_region_value
+  GROUP BY r.broad_region
+)
+SELECT * FROM completeness
+ORDER BY broad_region;
+
+-- Girl Embarkation Completeness by Broad Region
+WITH disembark_regions AS (
+  SELECT
+    i.voyage_id,
+    CAST(SUBSTR(CAST(i.primary_disembark_port AS STRING), 0, 1) AS INT64) * 10000 AS broad_region_code
+  FROM `slave_voyages.voyages_itinerary` i
+  WHERE i.primary_disembark_port IS NOT NULL
+),
+labeled_regions AS (
+  SELECT DISTINCT broad_region_value, broad_region
+  FROM `slave_voyages.lookup_voyages_geographic_codes`
+),
+completeness AS (
+  SELECT
+    r.broad_region,
+    COUNT(c.girl_embark_port1) / COUNT(*) * 100 AS girl_embark_pct
+  FROM `slave_voyages.voyages_slave_characteristics` c
+  JOIN disembark_regions i ON c.voyage_id = i.voyage_id
+  JOIN labeled_regions r ON i.broad_region_code = r.broad_region_value
+  GROUP BY r.broad_region
+)
+SELECT * FROM completeness
+ORDER BY broad_region;
+
+-- Girl Disembarkation Completeness by Broad Region
+WITH disembark_regions AS (
+  SELECT
+    i.voyage_id,
+    CAST(SUBSTR(CAST(i.primary_disembark_port AS STRING), 0, 1) AS INT64) * 10000 AS broad_region_code
+  FROM `slave_voyages.voyages_itinerary` i
+  WHERE i.primary_disembark_port IS NOT NULL
+),
+labeled_regions AS (
+  SELECT DISTINCT broad_region_value, broad_region
+  FROM `slave_voyages.lookup_voyages_geographic_codes`
+),
+completeness AS (
+  SELECT
+    r.broad_region,
+    COUNT(c.girl_arrival_total) / COUNT(*) * 100 AS girl_disembark_pct
+  FROM `slave_voyages.voyages_slave_characteristics` c
+  JOIN disembark_regions i ON c.voyage_id = i.voyage_id
+  JOIN labeled_regions r ON i.broad_region_code = r.broad_region_value
+  GROUP BY r.broad_region
+)
+SELECT * FROM completeness
+ORDER BY broad_region;
+
+-- Girl Deaths Completeness by Broad Region
+WITH disembark_regions AS (
+  SELECT
+    i.voyage_id,
+    CAST(SUBSTR(CAST(i.primary_disembark_port AS STRING), 0, 1) AS INT64) * 10000 AS broad_region_code
+  FROM `slave_voyages.voyages_itinerary` i
+  WHERE i.primary_disembark_port IS NOT NULL
+),
+labeled_regions AS (
+  SELECT DISTINCT broad_region_value, broad_region
+  FROM `slave_voyages.lookup_voyages_geographic_codes`
+),
+completeness AS (
+  SELECT
+    r.broad_region,
+    COUNT(c.girl_died_passage) / COUNT(*) * 100 AS girl_death_pct
+  FROM `slave_voyages.voyages_slave_characteristics` c
+  JOIN disembark_regions i ON c.voyage_id = i.voyage_id
+  JOIN labeled_regions r ON i.broad_region_code = r.broad_region_value
+  GROUP BY r.broad_region
+)
+SELECT * FROM completeness
+ORDER BY broad_region;
+```
+</div>
+
+<div style="border:1px solid #ccc; padding:10px; background-color:#f9f9f9; overflow-x:auto;">
+<strong>Query: Completeness by Decade and Region</strong>
+
+```sql
+-- Total Embarkation Completeness by Decade with Broad Regions as Columns
+WITH disembark_regions AS (
+  SELECT
+    i.voyage_id,
+    FLOOR(d.voyage_start_imputed_year / 10) * 10 AS decade,
+    CAST(SUBSTR(CAST(i.primary_disembark_port AS STRING), 1, 1) AS INT64) * 10000 AS broad_region_code
+  FROM `slave_voyages.voyages_itinerary` i
+  JOIN `slave_voyages.voyages_dates` d ON i.voyage_id = d.voyage_id
+  WHERE i.primary_disembark_port IS NOT NULL
+),
+labeled_regions AS (
+  SELECT DISTINCT broad_region_value, broad_region
+  FROM `slave_voyages.lookup_voyages_geographic_codes`
+),
+distinct_decades AS (
+  SELECT DISTINCT FLOOR(voyage_start_imputed_year / 10) * 10 AS decade
+  FROM `slave_voyages.voyages_dates`
+),
+all_combinations AS (
+  SELECT d.decade, r.broad_region
+  FROM distinct_decades d
+  CROSS JOIN (SELECT DISTINCT broad_region FROM labeled_regions) r
+),
+percent_complete AS (
+  SELECT
+    r.broad_region,
+    i.decade,
+    COUNT(s.slaves_embarked_total) / COUNT(*) * 100 AS completeness_pct
+  FROM `slave_voyages.voyages_slave_numbers` s
+  JOIN disembark_regions i ON s.voyage_id = i.voyage_id
+  JOIN labeled_regions r ON i.broad_region_code = r.broad_region_value
+  GROUP BY r.broad_region, i.decade
+),
+filled_data AS (
+  SELECT
+    a.decade,
+    a.broad_region,
+    IFNULL(p.completeness_pct, 0) AS completeness_pct
+  FROM all_combinations a
+  LEFT JOIN percent_complete p ON a.decade = p.decade AND a.broad_region = p.broad_region
+)
+SELECT * FROM filled_data
+PIVOT (
+  MAX(completeness_pct)
+  FOR broad_region IN (
+    'Europe',
+    'Mainland North America',
+    'Caribbean',
+    'Spanish Mainland Americas',
+    'Brazil',
+    'Africa',
+    'Middle East',
+    'Asia',
+    'Other'
+  )
+)
+ORDER BY decade;
+
+-- Total Disembarkation Completeness by Decade with Broad Regions as Columns
+WITH disembark_regions AS (
+  SELECT
+    i.voyage_id,
+    FLOOR(d.voyage_start_imputed_year / 10) * 10 AS decade,
+    CAST(SUBSTR(CAST(i.primary_disembark_port AS STRING), 1, 1) AS INT64) * 10000 AS broad_region_code
+  FROM `slave_voyages.voyages_itinerary` i
+  JOIN `slave_voyages.voyages_dates` d ON i.voyage_id = d.voyage_id
+  WHERE i.primary_disembark_port IS NOT NULL
+),
+labeled_regions AS (
+  SELECT DISTINCT broad_region_value, broad_region
+  FROM `slave_voyages.lookup_voyages_geographic_codes`
+),
+distinct_decades AS (
+  SELECT DISTINCT FLOOR(voyage_start_imputed_year / 10) * 10 AS decade
+  FROM `slave_voyages.voyages_dates`
+),
+all_combinations AS (
+  SELECT d.decade, r.broad_region
+  FROM distinct_decades d
+  CROSS JOIN (SELECT DISTINCT broad_region FROM labeled_regions) r
+),
+percent_complete AS (
+  SELECT
+    r.broad_region,
+    i.decade,
+    COUNT(s.slaves_disembarked_total) / COUNT(*) * 100 AS completeness_pct
+  FROM `slave_voyages.voyages_slave_numbers` s
+  JOIN disembark_regions i ON s.voyage_id = i.voyage_id
+  JOIN labeled_regions r ON i.broad_region_code = r.broad_region_value
+  GROUP BY r.broad_region, i.decade
+),
+filled_data AS (
+  SELECT
+    a.decade,
+    a.broad_region,
+    IFNULL(p.completeness_pct, 0) AS completeness_pct
+  FROM all_combinations a
+  LEFT JOIN percent_complete p ON a.decade = p.decade AND a.broad_region = p.broad_region
+)
+SELECT * FROM filled_data
+PIVOT (
+  MAX(completeness_pct)
+  FOR broad_region IN (
+    'Europe',
+    'Mainland North America',
+    'Caribbean',
+    'Spanish Mainland Americas',
+    'Brazil',
+    'Africa',
+    'Middle East',
+    'Asia',
+    'Other'
+  )
+)
+ORDER BY decade;
+
+-- Total Deaths Completeness by Decade with Broad Regions as Columns
+WITH disembark_regions AS (
+  SELECT
+    i.voyage_id,
+    FLOOR(d.voyage_start_imputed_year / 10) * 10 AS decade,
+    CAST(SUBSTR(CAST(i.primary_disembark_port AS STRING), 1, 1) AS INT64) * 10000 AS broad_region_code
+  FROM `slave_voyages.voyages_itinerary` i
+  JOIN `slave_voyages.voyages_dates` d ON i.voyage_id = d.voyage_id
+  WHERE i.primary_disembark_port IS NOT NULL
+),
+labeled_regions AS (
+  SELECT DISTINCT broad_region_value, broad_region
+  FROM `slave_voyages.lookup_voyages_geographic_codes`
+),
+distinct_decades AS (
+  SELECT DISTINCT FLOOR(voyage_start_imputed_year / 10) * 10 AS decade
+  FROM `slave_voyages.voyages_dates`
+),
+all_combinations AS (
+  SELECT d.decade, r.broad_region
+  FROM distinct_decades d
+  CROSS JOIN (SELECT DISTINCT broad_region FROM labeled_regions) r
+),
+percent_complete AS (
+  SELECT
+    r.broad_region,
+    i.decade,
+    COUNT(c.slave_death_total_derived) / COUNT(*) * 100 AS completeness_pct
+  FROM `slave_voyages.voyages_slave_characteristics` c
+  JOIN disembark_regions i ON c.voyage_id = i.voyage_id
+  JOIN labeled_regions r ON i.broad_region_code = r.broad_region_value
+  GROUP BY r.broad_region, i.decade
+),
+filled_data AS (
+  SELECT
+    a.decade,
+    a.broad_region,
+    IFNULL(p.completeness_pct, 0) AS completeness_pct
+  FROM all_combinations a
+  LEFT JOIN percent_complete p ON a.decade = p.decade AND a.broad_region = p.broad_region
+)
+SELECT * FROM filled_data
+PIVOT (
+  MAX(completeness_pct)
+  FOR broad_region IN (
+    'Europe',
+    'Mainland North America',
+    'Caribbean',
+    'Spanish Mainland Americas',
+    'Brazil',
+    'Africa',
+    'Middle East',
+    'Asia',
+    'Other'
+  )
+)
+ORDER BY decade;
+
+-- Female Embarkation Completeness by Decade with Broad Regions as Columns
+WITH disembark_regions AS (
+  SELECT
+    i.voyage_id,
+    FLOOR(d.voyage_start_imputed_year / 10) * 10 AS decade,
+    CAST(SUBSTR(CAST(i.primary_disembark_port AS STRING), 1, 1) AS INT64) * 10000 AS broad_region_code
+  FROM `slave_voyages.voyages_itinerary` i
+  JOIN `slave_voyages.voyages_dates` d ON i.voyage_id = d.voyage_id
+  WHERE i.primary_disembark_port IS NOT NULL
+),
+labeled_regions AS (
+  SELECT DISTINCT broad_region_value, broad_region
+  FROM `slave_voyages.lookup_voyages_geographic_codes`
+),
+distinct_decades AS (
+  SELECT DISTINCT FLOOR(voyage_start_imputed_year / 10) * 10 AS decade
+  FROM `slave_voyages.voyages_dates`
+),
+all_combinations AS (
+  SELECT d.decade, r.broad_region
+  FROM distinct_decades d
+  CROSS JOIN (SELECT DISTINCT broad_region FROM labeled_regions) r
+),
+percent_complete AS (
+  SELECT
+    r.broad_region,
+    i.decade,
+    COUNT(c.female_embark_total) / COUNT(*) * 100 AS completeness_pct
+  FROM `slave_voyages.voyages_slave_characteristics` c
+  JOIN disembark_regions i ON c.voyage_id = i.voyage_id
+  JOIN labeled_regions r ON i.broad_region_code = r.broad_region_value
+  GROUP BY r.broad_region, i.decade
+),
+filled_data AS (
+  SELECT
+    a.decade,
+    a.broad_region,
+    IFNULL(p.completeness_pct, 0) AS completeness_pct
+  FROM all_combinations a
+  LEFT JOIN percent_complete p ON a.decade = p.decade AND a.broad_region = p.broad_region
+)
+SELECT * FROM filled_data
+PIVOT (
+  MAX(completeness_pct)
+  FOR broad_region IN (
+    'Europe',
+    'Mainland North America',
+    'Caribbean',
+    'Spanish Mainland Americas',
+    'Brazil',
+    'Africa',
+    'Middle East',
+    'Asia',
+    'Other'
+  )
+)
+ORDER BY decade;
+
+-- Female Disembarkation Completeness by Decade with Broad Regions as Columns
+WITH disembark_regions AS (
+  SELECT
+    i.voyage_id,
+    FLOOR(d.voyage_start_imputed_year / 10) * 10 AS decade,
+    CAST(SUBSTR(CAST(i.primary_disembark_port AS STRING), 1, 1) AS INT64) * 10000 AS broad_region_code
+  FROM `slave_voyages.voyages_itinerary` i
+  JOIN `slave_voyages.voyages_dates` d ON i.voyage_id = d.voyage_id
+  WHERE i.primary_disembark_port IS NOT NULL
+),
+labeled_regions AS (
+  SELECT DISTINCT broad_region_value, broad_region
+  FROM `slave_voyages.lookup_voyages_geographic_codes`
+),
+distinct_decades AS (
+  SELECT DISTINCT FLOOR(voyage_start_imputed_year / 10) * 10 AS decade
+  FROM `slave_voyages.voyages_dates`
+),
+all_combinations AS (
+  SELECT d.decade, r.broad_region
+  FROM distinct_decades d
+  CROSS JOIN (SELECT DISTINCT broad_region FROM labeled_regions) r
+),
+percent_complete AS (
+  SELECT
+    r.broad_region,
+    i.decade,
+    COUNT(c.female_arrival_total) / COUNT(*) * 100 AS completeness_pct
+  FROM `slave_voyages.voyages_slave_characteristics` c
+  JOIN disembark_regions i ON c.voyage_id = i.voyage_id
+  JOIN labeled_regions r ON i.broad_region_code = r.broad_region_value
+  GROUP BY r.broad_region, i.decade
+),
+filled_data AS (
+  SELECT
+    a.decade,
+    a.broad_region,
+    IFNULL(p.completeness_pct, 0) AS completeness_pct
+  FROM all_combinations a
+  LEFT JOIN percent_complete p ON a.decade = p.decade AND a.broad_region = p.broad_region
+)
+SELECT * FROM filled_data
+PIVOT (
+  MAX(completeness_pct)
+  FOR broad_region IN (
+    'Europe',
+    'Mainland North America',
+    'Caribbean',
+    'Spanish Mainland Americas',
+    'Brazil',
+    'Africa',
+    'Middle East',
+    'Asia',
+    'Other'
+  )
+)
+ORDER BY decade;
+
+-- Female Deaths Completeness by Decade with Broad Regions as Columns
+WITH disembark_regions AS (
+  SELECT
+    i.voyage_id,
+    FLOOR(d.voyage_start_imputed_year / 10) * 10 AS decade,
+    CAST(SUBSTR(CAST(i.primary_disembark_port AS STRING), 1, 1) AS INT64) * 10000 AS broad_region_code
+  FROM `slave_voyages.voyages_itinerary` i
+  JOIN `slave_voyages.voyages_dates` d ON i.voyage_id = d.voyage_id
+  WHERE i.primary_disembark_port IS NOT NULL
+),
+labeled_regions AS (
+  SELECT DISTINCT broad_region_value, broad_region
+  FROM `slave_voyages.lookup_voyages_geographic_codes`
+),
+distinct_decades AS (
+  SELECT DISTINCT FLOOR(voyage_start_imputed_year / 10) * 10 AS decade
+  FROM `slave_voyages.voyages_dates`
+),
+all_combinations AS (
+  SELECT d.decade, r.broad_region
+  FROM distinct_decades d
+  CROSS JOIN (SELECT DISTINCT broad_region FROM labeled_regions) r
+),
+percent_complete AS (
+  SELECT
+    r.broad_region,
+    i.decade,
+    COUNT(c.female_death_passage) / COUNT(*) * 100 AS completeness_pct
+  FROM `slave_voyages.voyages_slave_characteristics` c
+  JOIN disembark_regions i ON c.voyage_id = i.voyage_id
+  JOIN labeled_regions r ON i.broad_region_code = r.broad_region_value
+  GROUP BY r.broad_region, i.decade
+),
+filled_data AS (
+  SELECT
+    a.decade,
+    a.broad_region,
+    IFNULL(p.completeness_pct, 0) AS completeness_pct
+  FROM all_combinations a
+  LEFT JOIN percent_complete p ON a.decade = p.decade AND a.broad_region = p.broad_region
+)
+SELECT * FROM filled_data
+PIVOT (
+  MAX(completeness_pct)
+  FOR broad_region IN (
+    'Europe',
+    'Mainland North America',
+    'Caribbean',
+    'Spanish Mainland Americas',
+    'Brazil',
+    'Africa',
+    'Middle East',
+    'Asia',
+    'Other'
+  )
+)
+ORDER BY decade;
+
+-- Girl Embarkation Completeness by Decade with Broad Regions as Columns
+WITH disembark_regions AS (
+  SELECT
+    i.voyage_id,
+    FLOOR(d.voyage_start_imputed_year / 10) * 10 AS decade,
+    CAST(SUBSTR(CAST(i.primary_disembark_port AS STRING), 1, 1) AS INT64) * 10000 AS broad_region_code
+  FROM `slave_voyages.voyages_itinerary` i
+  JOIN `slave_voyages.voyages_dates` d ON i.voyage_id = d.voyage_id
+  WHERE i.primary_disembark_port IS NOT NULL
+),
+labeled_regions AS (
+  SELECT DISTINCT broad_region_value, broad_region
+  FROM `slave_voyages.lookup_voyages_geographic_codes`
+),
+distinct_decades AS (
+  SELECT DISTINCT FLOOR(voyage_start_imputed_year / 10) * 10 AS decade
+  FROM `slave_voyages.voyages_dates`
+),
+all_combinations AS (
+  SELECT d.decade, r.broad_region
+  FROM distinct_decades d
+  CROSS JOIN (SELECT DISTINCT broad_region FROM labeled_regions) r
+),
+percent_complete AS (
+  SELECT
+    r.broad_region,
+    i.decade,
+    COUNT(c.girl_embark_port1) / COUNT(*) * 100 AS completeness_pct
+  FROM `slave_voyages.voyages_slave_characteristics` c
+  JOIN disembark_regions i ON c.voyage_id = i.voyage_id
+  JOIN labeled_regions r ON i.broad_region_code = r.broad_region_value
+  GROUP BY r.broad_region, i.decade
+),
+filled_data AS (
+  SELECT
+    a.decade,
+    a.broad_region,
+    IFNULL(p.completeness_pct, 0) AS completeness_pct
+  FROM all_combinations a
+  LEFT JOIN percent_complete p ON a.decade = p.decade AND a.broad_region = p.broad_region
+)
+SELECT * FROM filled_data
+PIVOT (
+  MAX(completeness_pct)
+  FOR broad_region IN (
+    'Europe',
+    'Mainland North America',
+    'Caribbean',
+    'Spanish Mainland Americas',
+    'Brazil',
+    'Africa',
+    'Middle East',
+    'Asia',
+    'Other'
+  )
+)
+ORDER BY decade;
+
+-- Girl Disembarkation Completeness by Decade with Broad Regions as Columns
+WITH disembark_regions AS (
+  SELECT
+    i.voyage_id,
+    FLOOR(d.voyage_start_imputed_year / 10) * 10 AS decade,
+    CAST(SUBSTR(CAST(i.primary_disembark_port AS STRING), 1, 1) AS INT64) * 10000 AS broad_region_code
+  FROM `slave_voyages.voyages_itinerary` i
+  JOIN `slave_voyages.voyages_dates` d ON i.voyage_id = d.voyage_id
+  WHERE i.primary_disembark_port IS NOT NULL
+),
+labeled_regions AS (
+  SELECT DISTINCT broad_region_value, broad_region
+  FROM `slave_voyages.lookup_voyages_geographic_codes`
+),
+distinct_decades AS (
+  SELECT DISTINCT FLOOR(voyage_start_imputed_year / 10) * 10 AS decade
+  FROM `slave_voyages.voyages_dates`
+),
+all_combinations AS (
+  SELECT d.decade, r.broad_region
+  FROM distinct_decades d
+  CROSS JOIN (SELECT DISTINCT broad_region FROM labeled_regions) r
+),
+percent_complete AS (
+  SELECT
+    r.broad_region,
+    i.decade,
+    COUNT(c.girl_arrival_total) / COUNT(*) * 100 AS completeness_pct
+  FROM `slave_voyages.voyages_slave_characteristics` c
+  JOIN disembark_regions i ON c.voyage_id = i.voyage_id
+  JOIN labeled_regions r ON i.broad_region_code = r.broad_region_value
+  GROUP BY r.broad_region, i.decade
+),
+filled_data AS (
+  SELECT
+    a.decade,
+    a.broad_region,
+    IFNULL(p.completeness_pct, 0) AS completeness_pct
+  FROM all_combinations a
+  LEFT JOIN percent_complete p ON a.decade = p.decade AND a.broad_region = p.broad_region
+)
+SELECT * FROM filled_data
+PIVOT (
+  MAX(completeness_pct)
+  FOR broad_region IN (
+    'Europe',
+    'Mainland North America',
+    'Caribbean',
+    'Spanish Mainland Americas',
+    'Brazil',
+    'Africa',
+    'Middle East',
+    'Asia',
+    'Other'
+  )
+)
+ORDER BY decade;
+
+-- Girl Deaths Completeness by Decade with Broad Regions as Columns
+WITH disembark_regions AS (
+  SELECT
+    i.voyage_id,
+    FLOOR(d.voyage_start_imputed_year / 10) * 10 AS decade,
+    CAST(SUBSTR(CAST(i.primary_disembark_port AS STRING), 1, 1) AS INT64) * 10000 AS broad_region_code
+  FROM `slave_voyages.voyages_itinerary` i
+  JOIN `slave_voyages.voyages_dates` d ON i.voyage_id = d.voyage_id
+  WHERE i.primary_disembark_port IS NOT NULL
+),
+labeled_regions AS (
+  SELECT DISTINCT broad_region_value, broad_region
+  FROM `slave_voyages.lookup_voyages_geographic_codes`
+),
+distinct_decades AS (
+  SELECT DISTINCT FLOOR(voyage_start_imputed_year / 10) * 10 AS decade
+  FROM `slave_voyages.voyages_dates`
+),
+all_combinations AS (
+  SELECT d.decade, r.broad_region
+  FROM distinct_decades d
+  CROSS JOIN (SELECT DISTINCT broad_region FROM labeled_regions) r
+),
+percent_complete AS (
+  SELECT
+    r.broad_region,
+    i.decade,
+    COUNT(c.girl_died_passage) / COUNT(*) * 100 AS completeness_pct
+  FROM `slave_voyages.voyages_slave_characteristics` c
+  JOIN disembark_regions i ON c.voyage_id = i.voyage_id
+  JOIN labeled_regions r ON i.broad_region_code = r.broad_region_value
+  GROUP BY r.broad_region, i.decade
+),
+filled_data AS (
+  SELECT
+    a.decade,
+    a.broad_region,
+    IFNULL(p.completeness_pct, 0) AS completeness_pct
+  FROM all_combinations a
+  LEFT JOIN percent_complete p ON a.decade = p.decade AND a.broad_region = p.broad_region
+)
+SELECT * FROM filled_data
+PIVOT (
+  MAX(completeness_pct)
+  FOR broad_region IN (
+    'Europe',
+    'Mainland North America',
+    'Caribbean',
+    'Spanish Mainland Americas',
+    'Brazil',
+    'Africa',
+    'Middle East',
+    'Asia',
+    'Other'
+  )
+)
+ORDER BY decade;
+```
+</div>
+***
+
+#### **Appendix D: Bulk Completeness Scorecards**
+
+**1. Slave Voyages Meta Data**
+
+  -----------------------------------------------------------------------
+  voyage_id                                          100.00
+  -------------------------------------------------- --------------------
+  evergreen                                          100.00
+
+  voyage_grouping_code                               99.67
+
+  voyage_grouping                                    99.25
+  -----------------------------------------------------------------------
+
+**\
+2. Slave Voyages Ships, Nations, and Owners Data**
+
+  -----------------------------------------------------------------------
+  ship_name                                        95.47
+  ------------------------------------------------ ----------------------
+  nationality_imputed                              93.94
+
+  nationality                                      73.58
+
+  rig_type                                         65.62
+
+  primary_owner                                    60.05
+
+  tonnage                                          48.93
+
+  tonnage_imputed                                  46.26
+
+  tonnage_type                                     46.05
+
+  construction_place                               25.48
+
+  construction_region                              25.13
+
+  secondary_owner                                  21.42
+
+  registration_place                               20.91
+
+  registration_region                              20.81
+
+  year_constructed                                 17.34
+
+  gun_count                                        17.13
+
+  registration_year                                13.62
+
+  tertiary_owner                                   11.42
+
+  fourth_owner                                     7.47
+
+  fifth_owner                                      5.17
+
+  sixth_owner                                      3.62
+
+  seventh_owner                                    2.23
+
+  eighth_owner                                     1.26
+
+  ninth_owner                                      0.53
+
+  tenth_owner                                      0.26
+
+  eleventh_owner                                   0.09
+
+  twelfth_owner                                    0.04
+
+  thirteenth_owner                                 0.04
+
+  fifteenth_owner                                  0.01
+
+  sixteenth_owner                                  0.01
+
+  fourteenth_owner                                 0.01
+  -----------------------------------------------------------------------
+
+**3. Slave Voyages Outcome Data**
+
+  -----------------------------------------------------------------------
+  voyage_outcome_code                                       100.00
+  --------------------------------------------------------- -------------
+  owner_outcome_code                                        100.00
+
+  slave_outcome_code                                        100.00
+
+  capture_outcome_code                                      100.00
+
+  african_resistance_outcome_code                           1.58
+  -----------------------------------------------------------------------
+
+**\
+4. Slave Voyages Itinerary Data**
+
+  -----------------------------------------------------------------------
+  purchase_location_imputed_broad_region                    95.33
+  --------------------------------------------------------- -------------
+  purchase_location_imputed_place                           95.33
+
+  purchase_location_imputed_region                          95.33
+
+  disembark_port_imputed_broad_region                       88.19
+
+  disembark_port_imputed_place                              88.19
+
+  disembark_port_imputed_region                             88.18
+
+  departure_region                                          87.61
+
+  departure_port_imputed                                    87.61
+
+  departure_broad_region                                    87.61
+
+  departure_port                                            80.75
+
+  primary_sale_location                                     71.24
+
+  disembark_region_1                                        71.23
+
+  primary_sale_port                                         71.19
+
+  embark_region_1                                           61.14
+
+  primary_purchase_location                                 61.12
+
+  primary_purchase_port                                     60.81
+
+  primary_embark_port                                       43.54
+
+  primary_embark_region                                     43.36
+
+  return_port                                               29.78
+
+  return_broad_region                                       29.66
+
+  return_region                                             29.26
+
+  primary_disembark_port                                    28.80
+
+  primary_disembark_region                                  28.71
+
+  num_ports_before_purchase                                 9.62
+
+  num_ports_americas_before_sale                            8.58
+
+  secondary_purchase_location                               7.73
+
+  embark_region_2                                           7.71
+
+  port_before_crossing                                      4.66
+
+  secondary_sale_location                                   3.71
+
+  disembark_region_2                                        3.70
+
+  secondary_embark_port                                     2.71
+
+  secondary_embark_region                                   2.70
+
+  embark_region_3                                           1.53
+
+  tertiary_purchase_location                                1.53
+
+  secondary_disembark_port                                  0.43
+
+  secondary_disembark_region                                0.42
+
+  tertiary_sale_location                                    0.24
+
+  disembark_region_3                                        0.24
+  -----------------------------------------------------------------------
+
+**5. Slave Voyages Dates Data**
+
+  -----------------------------------------------------------------------
+  voyage_start_imputed_year                                  100.00
+  ---------------------------------------------------------- ------------
+  period_100_year                                            100.00
+
+  period_10_year                                             100.00
+
+  departure_from_africa_imputed_year                         100.00
+
+  landing_imputed_year                                       100.00
+
+  period_5\_year                                             100.00
+
+  period_25_year                                             100.00
+
+  voyage_start_year                                          73.33
+
+  primary_landing_year                                       67.48
+
+  voyage_start_month                                         66.53
+
+  voyage_start_day                                           63.37
+
+  voyage_start_date                                          63.32
+
+  primary_landing_month                                      58.46
+
+  primary_landing_day                                        50.63
+
+  primary_landing_date                                       50.41
+
+  voyage_length_home_to_disembarkation_days                  36.17
+
+  voyage_end_year                                            31.57
+
+  departure_from_africa_year                                 31.16
+
+  voyage_end_month                                           30.12
+
+  voyage_end_day                                             28.99
+
+  voyage_end_date                                            28.95
+
+  departure_from_africa_month                                26.17
+
+  slave_purchase_start_year                                  24.47
+
+  departure_from_africa_day                                  23.28
+
+  departure_from_africa_date                                 22.48
+
+  slave_purchase_start_month                                 21.44
+
+  voyage_length_africa_to_disembarkation_days                20.24
+
+  slave_purchase_start_day                                   18.38
+
+  slave_purchase_date                                        18.35
+
+  return_departure_year                                      17.66
+
+  return_departure_month                                     15.92
+
+  return_departure_day                                       15.65
+
+  return_departure_date                                      15.64
+
+  middle_passage_length_days                                 11.20
+
+  secondary_landing_month                                    1.64
+
+  secondary_landing_year                                     1.64
+
+  secondary_landing_day                                      1.45
+
+  secondary_landing_date                                     1.40
+
+  tertiary_landing_year                                      0.08
+
+  tertiary_landing_month                                     0.07
+
+  tertiary_landing_day                                       0.05
+
+  tertiary_landing_date                                      0.05
+  -----------------------------------------------------------------------
+
+**6. Slave Voyages Crew Data**
+
+  -----------------------------------------------------------------------
+  captain_1\_name                                  88.76
+  ------------------------------------------------ ----------------------
+  crew_initial                                     35.26
+
+  crew_died_total                                  12.34
+
+  captain_2\_name                                  9.92
+
+  crew_deserted_total                              6.44
+
+  crew_first_landing                               6.32
+
+  crew_died_in_africa                              5.73
+
+  crew_died_americas                               5.72
+
+  crew_died_return_voyage                          5.68
+
+  crew_died_middle_passage                         5.56
+
+  crew_died_pre_africa                             5.36
+
+  crew_return_start                                4.22
+
+  crew_after_purchase                              0.85
+
+  crew_final                                       0.84
+
+  captain_3\_name                                  0.56
+
+  crew_unspecified                                 0.11
+  -----------------------------------------------------------------------
+
+**\
+7. Slave Voyages Slave Numbers Data**
+
+  -----------------------------------------------------------------------
+  slaves_embarked_total                                  95.48
+  ------------------------------------------------------ ----------------
+  slaves_disembarked_total                               94.67
+
+  slaves_arrival_first_port                              50.85
+
+  slaves_purchased_total                                 22.99
+
+  slaves_intented_first_port                             20.21
+
+  slaves_disemark_first_port                             8.36
+
+  slaves_disemark_second_port                            6.86
+
+  slaves_disemark_third_port                             6.54
+
+  slaves_carried_first_port                              5.42
+
+  slaves_carried_second_port                             5.21
+
+  slaves_carried_third_port                              5.16
+
+  slaves_departed_total                                  4.17
+
+  slaves_intented_second_port                            0.16
+  -----------------------------------------------------------------------
+
+**8. Slave Voyages Slave Characteristics Data**
+
+  -----------------------------------------------------------------------
+  slave_death_passage_derived                      18.05
+  ------------------------------------------------ ----------------------
+  slave_death_total_derived                        17.95
+
+  slave_mortality_rate                             17.94
+
+  total_arrival_age                                11.65
+
+  adult_arrival_total                              11.65
+
+  child_arrival_total                              11.65
+
+  pct_child_arrival                                11.65
+
+  pct_male_arrival                                 10.91
+
+  total_arrival_gender                             10.91
+
+  male_arrival_total                               10.91
+
+  female_arrival_total                             10.91
+
+  slave_death_passage                              10.84
+
+  total_arrival_slaves                             9.61
+
+  pct_men_arrival                                  9.60
+
+  pct_women_arrival                                9.60
+
+  women_arrival_total                              9.60
+
+  men_arrival_total                                9.60
+
+  boy_arrival_total                                9.59
+
+  pct_boy_arrival                                  9.59
+
+  pct_girl_arrival                                 9.59
+
+  girl_arrival_total                               9.59
+
+  pct_male_landed                                  9.51
+
+  total_landed_gender                              9.51
+
+  male_disembark_total                             9.50
+
+  female_disembark_total                           8.81
+
+  total_landed_age                                 8.64
+
+  pct_child_landed                                 8.63
+
+  men_disembark_port1                              8.48
+
+  total_landed_slaves                              8.42
+
+  pct_women_landed                                 8.42
+
+  pct_men_landed                                   8.42
+
+  pct_boy_landed                                   8.41
+
+  pct_girl_landed                                  8.41
+
+  women_disembark_port1                            8.39
+
+  boy_disembark_port1                              8.13
+
+  adult_disembark_total                            7.93
+
+  child_disembark_total                            7.93
+
+  girl_disembark_port1                             7.82
+
+  women_embark_port3                               4.66
+
+  total_embarked_age                               4.37
+
+  pct_child_embark                                 4.37
+
+  adult_embark_total                               4.30
+
+  child_embark_total                               4.30
+
+  total_embarked_gender                            3.02
+
+  pct_male_embark                                  3.02
+
+  male_embark_total                                3.01
+
+  female_embark_total                              2.95
+
+  avg_slave_price_jamaica                          2.63
+
+  men_embark_port1                                 2.52
+
+  total_embarked_slaves                            2.50
+
+  pct_women_embark                                 2.50
+
+  pct_men_embark                                   2.50
+
+  pct_boy_embark                                   2.49
+
+  pct_girl_embark                                  2.49
+
+  women_embark_port1                               2.41
+
+  boy_embark_port1                                 2.24
+
+  slave_death_americas                             2.17
+
+  adult_embark_port1                               2.08
+
+  girl_embark_port1                                2.02
+
+  child_embark_port1                               1.48
+
+  male_disembark_port1                             1.10
+
+  female_disembark_port1                           1.10
+
+  adult_death_passage                              1.08
+
+  women_died_passage                               0.94
+
+  slave_death_africa                               0.81
+
+  men_died_passage                                 0.80
+
+  child_death_passage                              0.74
+
+  child_disembark_port1                            0.71
+
+  male_embark_port1                                0.54
+
+  female_embark_port1                              0.53
+
+  boy_died_passage                                 0.50
+
+  infant_disembark_port1                           0.44
+
+  men_embark_port2                                 0.40
+
+  women_embark_port2                               0.40
+
+  boy_embark_port2                                 0.37
+
+  girl_died_passage                                0.35
+
+  infant_embark_port1                              0.34
+
+  girl_embark_port2                                0.34
+
+  men_embark_port3                                 0.22
+
+  child_died_passage                               0.20
+
+  boy_embark_port3                                 0.18
+
+  adult_disembark_port1                            0.15
+
+  male_death_passage                               0.15
+
+  girl_embark_port3                                0.14
+
+  male_died_passage                                0.13
+
+  female_death_passage                             0.12
+
+  men_disembark_port2                              0.09
+
+  women_disembark_port2                            0.08
+
+  girl_disembark_port2                             0.07
+
+  boy_disembark_port2                              0.07
+
+  female_died_passage                              0.07
+
+  male_embark_port2                                0.02
+
+  infant_embark_port2                              0.02
+
+  female_embark_port2                              0.01
+
+  child_embark_port2                               0.01
+
+  male_disembark_port2                             0.01
+
+  female_disembark_port2                           0.01
+
+  child_disembark_port2                            0.01
+
+  adult_died_passage                               0.00
+
+  adult_embark_port3                               0.00
+
+  male_embark_port3                                0.00
+
+  female_embark_port3                              0.00
+
+  infant_died_passage                              0.00
+
+  adult_disembark_port2                            0.00
+
+  infant_embark_port3                              0.00
+
+  infant_disembark_port2                           0.00
+
+  child_embark_port3                               0.00
+
+  adult_embark_port2                               0.00
+  -----------------------------------------------------------------------
+
+**\
+9. Slave Voyages Sources**
+
+  -----------------------------------------------------------------------
+  source_a                               99.96
+  -------------------------------------- --------------------------------
+  source_b                               65.26
+
+  source_c                               43.88
+
+  source_d                               29.58
+
+  source_e                               20.62
+
+  source_f                               14.06
+
+  source_g                               10.17
+
+  source_h                               7.67
+
+  source_i                               5.63
+
+  source_j                               3.79
+
+  source_k                               2.27
+
+  source_l                               1.33
+
+  source_m                               0.72
+
+  source_n                               0.35
+
+  source_o                               0.20
+
+  source_p                               0.08
+
+  source_q                               0.04
+
+  source_r                               0.01
+  -----------------------------------------------------------------------
+
+#### **Appendix E: Case Study Sliced Completeness Scorecards**
+
+**1. Total Embarkations by Decade**
+
+  -----------------------------------------------------------------------
+  Decade               Completeness Percentages
+  -------------------- --------------------------------------------------
+  1510                 100.00
+
+  1520                 100.00
+
+  1530                 100.00
+
+  1540                 100.00
+
+  1550                 100.00
+
+  1560                 100.00
+
+  1570                 98.97
+
+  1580                 99.49
+
+  1590                 99.71
+
+  1600                 100.00
+
+  1610                 99.30
+
+  1620                 99.66
+
+  1630                 100.00
+
+  1640                 99.46
+
+  1650                 94.58
+
+  1660                 93.67
+
+  1670                 99.13
+
+  1680                 98.21
+
+  1690                 99.00
+
+  1700                 96.34
+
+  1710                 98.29
+
+  1720                 98.61
+
+  1730                 98.90
+
+  1740                 98.15
+
+  1750                 98.25
+
+  1760                 97.79
+
+  1770                 98.00
+
+  1780                 97.58
+
+  1790                 94.17
+
+  1800                 97.26
+
+  1810                 97.20
+
+  1820                 98.14
+
+  1830                 91.92
+
+  1840                 64.86
+
+  1850                 67.51
+
+  1860                 68.00
+  -----------------------------------------------------------------------
+
+**2. Total Disembarkations by Decade**
+
+  -----------------------------------------------------------------------
+  Decade               Completeness Percentage
+  -------------------- --------------------------------------------------
+  1510                 100.00
+
+  1520                 100.00
+
+  1530                 100.00
+
+  1540                 100.00
+
+  1550                 97.96
+
+  1560                 100.00
+
+  1570                 98.97
+
+  1580                 99.49
+
+  1590                 99.71
+
+  1600                 100.00
+
+  1610                 99.30
+
+  1620                 99.66
+
+  1630                 100.00
+
+  1640                 98.39
+
+  1650                 94.09
+
+  1660                 93.33
+
+  1670                 99.13
+
+  1680                 96.75
+
+  1690                 98.58
+
+  1700                 95.64
+
+  1710                 97.58
+
+  1720                 97.89
+
+  1730                 97.69
+
+  1740                 96.99
+
+  1750                 97.24
+
+  1760                 96.19
+
+  1770                 96.56
+
+  1780                 95.86
+
+  1790                 93.36
+
+  1800                 96.50
+
+  1810                 96.94
+
+  1820                 97.93
+
+  1830                 91.78
+
+  1840                 64.80
+
+  1850                 67.51
+
+  1860                 68.00
+  -----------------------------------------------------------------------
+
+**3. Total Deaths by Decade**
+
+  -----------------------------------------------------------------------
+  Decade               Completeness Percentage
+  -------------------- --------------------------------------------------
+  1510                 0.00
+
+  1520                 0.00
+
+  1530                 54.55
+
+  1540                 0.00
+
+  1550                 2.04
+
+  1560                 8.57
+
+  1570                 1.03
+
+  1580                 3.08
+
+  1590                 1.16
+
+  1600                 8.05
+
+  1610                 24.39
+
+  1620                 3.45
+
+  1630                 5.24
+
+  1640                 7.53
+
+  1650                 3.94
+
+  1660                 5.67
+
+  1670                 11.08
+
+  1680                 18.21
+
+  1690                 9.82
+
+  1700                 11.60
+
+  1710                 14.85
+
+  1720                 12.40
+
+  1730                 8.97
+
+  1740                 9.03
+
+  1750                 12.55
+
+  1760                 19.55
+
+  1770                 12.56
+
+  1780                 21.31
+
+  1790                 29.63
+
+  1800                 22.10
+
+  1810                 24.03
+
+  1820                 40.84
+
+  1830                 19.28
+
+  1840                 10.96
+
+  1850                 15.07
+
+  1860                 17.71
+  -----------------------------------------------------------------------
+
+**4. Male and Female Embarkations by Decade**
+
+  ------------------------------------------------------------------------
+  Decade     Male Completeness Percentage  Female Completeness Percentage
+  ---------- ----------------------------- -------------------------------
+  1510       0.00                          0.00
+
+  1520       0.00                          0.00
+
+  1530       27.27                         27.27
+
+  1540       4.35                          4.35
+
+  1550       0.00                          0.00
+
+  1560       0.00                          0.00
+
+  1570       0.00                          0.00
+
+  1580       0.00                          0.00
+
+  1590       0.00                          0.00
+
+  1600       0.00                          0.00
+
+  1610       0.00                          0.00
+
+  1620       0.00                          0.00
+
+  1630       0.81                          0.81
+
+  1640       8.60                          8.60
+
+  1650       2.96                          2.96
+
+  1660       1.00                          1.00
+
+  1670       1.75                          1.75
+
+  1680       5.04                          5.04
+
+  1690       1.85                          1.71
+
+  1700       3.84                          3.49
+
+  1710       4.26                          4.26
+
+  1720       4.95                          4.84
+
+  1730       1.71                          1.71
+
+  1740       1.22                          1.10
+
+  1750       1.70                          1.56
+
+  1760       3.07                          2.93
+
+  1770       4.12                          4.00
+
+  1780       3.11                          3.11
+
+  1790       10.66                         10.59
+
+  1800       0.18                          0.18
+
+  1810       0.69                          0.69
+
+  1820       1.69                          1.69
+
+  1830       1.77                          1.77
+
+  1840       2.38                          2.38
+
+  1850       3.33                          3.33
+
+  1860       6.86                          5.71
+  ------------------------------------------------------------------------
+
+**5. Male and Female Disembarkations by Decade**
+
+  ------------------------------------------------------------------------
+  Decade     Male Completeness Percentage  Female Completeness Percentage
+  ---------- ----------------------------- -------------------------------
+  1510       0.00                          0.00
+
+  1520       0.00                          0.00
+
+  1530       27.27                         27.27
+
+  1540       4.35                          4.35
+
+  1550       0.00                          0.00
+
+  1560       0.00                          0.00
+
+  1570       1.03                          1.03
+
+  1580       0.00                          0.00
+
+  1590       0.00                          0.00
+
+  1600       1.69                          1.69
+
+  1610       1.05                          1.05
+
+  1620       1.03                          1.03
+
+  1630       1.21                          1.21
+
+  1640       9.68                          9.68
+
+  1650       2.96                          2.96
+
+  1660       12.33                         12.33
+
+  1670       27.70                         27.70
+
+  1680       20.00                         20.00
+
+  1690       8.53                          8.53
+
+  1700       10.90                         10.90
+
+  1710       12.51                         12.51
+
+  1720       9.17                          9.17
+
+  1730       4.07                          4.07
+
+  1740       3.99                          3.99
+
+  1750       4.69                          4.69
+
+  1760       14.48                         14.48
+
+  1770       10.44                         10.44
+
+  1780       12.42                         12.42
+
+  1790       24.22                         24.22
+
+  1800       8.80                          8.80
+
+  1810       21.79                         21.79
+
+  1820       6.22                          6.22
+
+  1830       11.76                         11.76
+
+  1840       5.61                          5.61
+
+  1850       6.07                          6.07
+
+  1860       9.71                          9.71
+  ------------------------------------------------------------------------
+
+**6. Male and Female Deaths by Decade**
+
+  ------------------------------------------------------------------------
+  Decade     Male Completeness Percentage  Female Completeness Percentage
+  ---------- ----------------------------- -------------------------------
+  1510       0.00                          0.00
+
+  1520       0.00                          0.00
+
+  1530       0.00                          0.00
+
+  1540       0.00                          0.00
+
+  1550       0.00                          0.00
+
+  1560       0.00                          0.00
+
+  1570       0.00                          0.00
+
+  1580       0.00                          0.00
+
+  1590       0.00                          0.00
+
+  1600       0.00                          0.00
+
+  1610       0.00                          0.00
+
+  1620       0.00                          0.00
+
+  1630       0.00                          0.00
+
+  1640       0.00                          0.00
+
+  1650       0.00                          0.00
+
+  1660       0.00                          0.00
+
+  1670       0.00                          0.00
+
+  1680       0.00                          0.00
+
+  1690       0.28                          0.14
+
+  1700       1.13                          0.87
+
+  1710       0.43                          0.43
+
+  1720       0.50                          0.33
+
+  1730       0.55                          0.55
+
+  1740       0.12                          0.12
+
+  1750       0.09                          0.00
+
+  1760       0.10                          0.10
+
+  1770       0.16                          0.12
+
+  1780       0.04                          0.04
+
+  1790       0.07                          0.00
+
+  1800       0.00                          0.00
+
+  1810       0.00                          0.00
+
+  1820       0.04                          0.04
+
+  1830       0.00                          0.00
+
+  1840       0.00                          0.00
+
+  1850       0.00                          0.00
+
+  1860       0.00                          0.00
+  ------------------------------------------------------------------------
+
+**7. Girl Embarkations by Decade**
+
+  -----------------------------------------------------------------------
+  Decade               Completeness Percentage
+  -------------------- --------------------------------------------------
+  1510                 0.00
+
+  1520                 0.00
+
+  1530                 0.00
+
+  1540                 0.00
+
+  1550                 0.00
+
+  1560                 0.00
+
+  1570                 0.00
+
+  1580                 0.00
+
+  1590                 0.00
+
+  1600                 0.00
+
+  1610                 0.00
+
+  1620                 0.00
+
+  1630                 0.00
+
+  1640                 2.69
+
+  1650                 1.48
+
+  1660                 0.00
+
+  1670                 1.46
+
+  1680                 2.76
+
+  1690                 1.00
+
+  1700                 2.35
+
+  1710                 2.77
+
+  1720                 3.39
+
+  1730                 1.16
+
+  1740                 0.93
+
+  1750                 1.24
+
+  1760                 2.42
+
+  1770                 3.20
+
+  1780                 2.95
+
+  1790                 6.81
+
+  1800                 0.11
+
+  1810                 0.34
+
+  1820                 1.31
+
+  1830                 1.63
+
+  1840                 0.99
+
+  1850                 0.59
+
+  1860                 2.29
+  -----------------------------------------------------------------------
+
+**8. Girl Disembarkations by Decade**
+
+  -----------------------------------------------------------------------
+  Decade               Completeness Percentage
+  -------------------- --------------------------------------------------
+  1510                 0.00
+
+  1520                 0.00
+
+  1530                 0.00
+
+  1540                 0.00
+
+  1550                 0.00
+
+  1560                 0.00
+
+  1570                 0.00
+
+  1580                 0.00
+
+  1590                 0.00
+
+  1600                 0.00
+
+  1610                 1.05
+
+  1620                 0.69
+
+  1630                 0.40
+
+  1640                 9.14
+
+  1650                 2.96
+
+  1660                 12.33
+
+  1670                 26.53
+
+  1680                 19.19
+
+  1690                 8.11
+
+  1700                 10.20
+
+  1710                 12.08
+
+  1720                 8.00
+
+  1730                 3.52
+
+  1740                 3.76
+
+  1750                 3.63
+
+  1760                 12.84
+
+  1770                 9.48
+
+  1780                 9.51
+
+  1790                 20.83
+
+  1800                 6.31
+
+  1810                 21.49
+
+  1820                 5.71
+
+  1830                 10.91
+
+  1840                 4.23
+
+  1850                 3.91
+
+  1860                 4.00
+  -----------------------------------------------------------------------
+
+**9. Girl Deaths by Decade**
+
+  -----------------------------------------------------------------------
+  Decade               Completeness Percentage
+  -------------------- --------------------------------------------------
+  1510                 0.00
+
+  1520                 0.00
+
+  1530                 0.00
+
+  1540                 0.00
+
+  1550                 0.00
+
+  1560                 0.00
+
+  1570                 0.00
+
+  1580                 0.00
+
+  1590                 0.00
+
+  1600                 0.00
+
+  1610                 0.00
+
+  1620                 0.00
+
+  1630                 0.00
+
+  1640                 0.00
+
+  1650                 0.00
+
+  1660                 0.00
+
+  1670                 0.00
+
+  1680                 0.00
+
+  1690                 0.00
+
+  1700                 0.00
+
+  1710                 0.07
+
+  1720                 0.50
+
+  1730                 0.72
+
+  1740                 0.17
+
+  1750                 0.51
+
+  1760                 0.61
+
+  1770                 0.32
+
+  1780                 0.37
+
+  1790                 1.91
+
+  1800                 0.00
+
+  1810                 0.00
+
+  1820                 0.00
+
+  1830                 0.00
+
+  1840                 0.07
+
+  1850                 0.00
+
+  1860                 0.00
+  -----------------------------------------------------------------------
+
+**10. Total Embarkation by Region**
+
+  -----------------------------------------------------------------------
+  Region                               Completeness Percentage
+  ------------------------------------ ----------------------------------
+  Africa                               0.00
+
+  Asia                                 0.44
+
+  Brazil                               0.00
+
+  Caribbean                            0.58
+
+  Europe                               0.00
+
+  Mainland North America               0.23
+
+  Spanish Mainland Americas            0.00
+  -----------------------------------------------------------------------
+
+**11. Total Disembarkation by Region**
+
+  -----------------------------------------------------------------------
+  Region                               Completeness Percentage
+  ------------------------------------ ----------------------------------
+  Spanish Mainland Americas            98.90
+
+  Brazil                               97.90
+
+  Africa                               96.00
+
+  Caribbean                            95.18
+
+  Mainland North America               94.98
+
+  Asia                                 93.36
+
+  Europe                               92.86
+  -----------------------------------------------------------------------
+
+**12. Total Deaths by Region**
+
+  -----------------------------------------------------------------------
+  Region                               Completeness Percentage
+  ------------------------------------ ----------------------------------
+  Brazil                               26.21
+
+  Mainland North America               23.97
+
+  Caribbean                            21.96
+
+  Asia                                 11.06
+
+  Europe                               7.14
+
+  Spanish Mainland Americas            5.40
+
+  Africa                               4.00
+  -----------------------------------------------------------------------
+
+**13. Male and Female Embarkation by Region**
+
+  -----------------------------------------------------------------------
+  Region               Male Completeness       Female Completeness
+                       Percentage              Percentage
+  -------------------- ----------------------- --------------------------
+  Africa               8.00                    8.00
+
+  Asia                 2.65                    2.65
+
+  Brazil               2.62                    2.58
+
+  Caribbean            7.23                    6.86
+
+  Europe               3.57                    3.57
+
+  Mainland North       3.20                    3.20
+  America                                      
+
+  Spanish Mainland     0.64                    0.64
+  Americas                                     
+  -----------------------------------------------------------------------
+
+**14. Male and Female Disembarkation by Region**
+
+  -----------------------------------------------------------------------
+  Region               Male Completeness        Female Completeness
+                       Percentage               Percentage
+  -------------------- ------------------------ -------------------------
+  Africa               8.00                     8.00
+
+  Asia                 5.31                     5.31
+
+  Brazil               5.45                     5.45
+
+  Caribbean            21.13                    21.13
+
+  Europe               3.57                     3.57
+
+  Mainland North       9.36                     9.36
+  America                                       
+
+  Spanish Mainland     4.21                     4.21
+  Americas                                      
+  -----------------------------------------------------------------------
+
+**15. Male and Female Deaths by Region**
+
+  -----------------------------------------------------------------------
+  Region               Male Completeness        Female Completeness
+                       Percentage               Percentage
+  -------------------- ------------------------ -------------------------
+  Africa               0.00                     0.00
+
+  Asia                 0.00                     0.00
+
+  Brazil               0.00                     0.00
+
+  Caribbean            0.79                     0.52
+
+  Europe               0.00                     0.00
+
+  Mainland North       0.00                     0.00
+  America                                       
+
+  Spanish Mainland     0.18                     0.18
+  Americas                                      
+  -----------------------------------------------------------------------
+
+**16. Girl Embarkation by Region**
+
+  -----------------------------------------------------------------------
+  Region                               Completeness Percentage
+  ------------------------------------ ----------------------------------
+  Africa                               8.00
+
+  Asia                                 0.88
+
+  Brazil                               1.72
+
+  Caribbean                            4.79
+
+  Europe                               3.57
+
+  Mainland North America               2.28
+
+  Spanish Mainland Americas            0.46
+  -----------------------------------------------------------------------
+
+**17. Girl Disembarkation by Region**
+
+  -----------------------------------------------------------------------
+  Region                              Completeness Percentage
+  ----------------------------------- -----------------------------------
+  Africa                              8.00
+
+  Asia                                4.42
+
+  Brazil                              4.78
+
+  Caribbean                           19.11
+
+  Europe                              3.57
+
+  Mainland North America              9.13
+
+  Spanish Mainland Americas           1.47
+  -----------------------------------------------------------------------
+
+**18. Girl Deaths by Region**
+
+  -----------------------------------------------------------------------
+  Region                               Completeness Percentage
+  ------------------------------------ ----------------------------------
+  Africa                               0.00
+
+  Asia                                 0.44
+
+  Brazil                               0.00
+
+  Caribbean                            0.58
+
+  Europe                               0.00
+
+  Mainland North America               0.23
+
+  Spanish Mainland Americas            0.00
+  -----------------------------------------------------------------------
+
+**19. Completeness Percentages for Total Embarkation by Decade and
+Region**
+
+  -----------------------------------------------------------------------------------------------
+  Decade   Europe   Mainland   Caribbean   Spanish    Brazil   Africa   Middle   Asia     Other
+                    North                  Mainland                     East              
+                    America                Americas                                       
+  -------- -------- ---------- ----------- ---------- -------- -------- -------- -------- -------
+  1510     0.00     0.00       0.00        100.00     0.00     0.00     0.00     0.00     0.00
+
+  1520     0.00     0.00       100.00      0.00       0.00     0.00     0.00     0.00     0.00
+
+  1530     0.00     0.00       100.00      0.00       0.00     0.00     0.00     0.00     0.00
+
+  1540     0.00     0.00       100.00      100.00     0.00     0.00     0.00     100.00   0.00
+
+  1550     0.00     0.00       100.00      100.00     0.00     0.00     0.00     0.00     0.00
+
+  1560     0.00     0.00       100.00      100.00     0.00     0.00     0.00     0.00     0.00
+
+  1570     100.00   0.00       100.00      97.56      0.00     100.00   0.00     0.00     0.00
+
+  1580     100.00   0.00       100.00      100.00     100.00   0.00     0.00     100.00   0.00
+
+  1590     0.00     0.00       100.00      100.00     50.00    100.00   0.00     100.00   0.00
+
+  1600     100.00   0.00       100.00      100.00     100.00   100.00   0.00     100.00   0.00
+
+  1610     100.00   0.00       100.00      99.13      100.00   100.00   0.00     66.67    0.00
+
+  1620     0.00     0.00       100.00      99.04      100.00   0.00     0.00     100.00   0.00
+
+  1630     0.00     0.00       100.00      100.00     100.00   100.00   0.00     100.00   0.00
+
+  1640     0.00     0.00       96.88       100.00     100.00   0.00     0.00     100.00   0.00
+
+  1650     0.00     100.00     93.65       97.73      100.00   100.00   0.00     100.00   0.00
+
+  1660     100.00   100.00     94.96       100.00     100.00   100.00   0.00     0.00     0.00
+
+  1670     100.00   100.00     99.27       100.00     90.91    100.00   0.00     100.00   0.00
+
+  1680     0.00     77.78      98.37       100.00     100.00   0.00     0.00     0.00     0.00
+
+  1690     100.00   80.00      98.37       94.74      100.00   0.00     0.00     0.00     0.00
+
+  1700     0.00     90.91      85.71       100.00     99.58    0.00     0.00     50.00    0.00
+
+  1710     100.00   87.50      99.49       100.00     97.79    0.00     0.00     100.00   0.00
+
+  1720     100.00   96.55      95.79       100.00     100.00   0.00     0.00     96.43    0.00
+
+  1730     100.00   100.00     97.83       100.00     100.00   0.00     0.00     100.00   0.00
+
+  1740     100.00   93.88      98.33       100.00     100.00   0.00     0.00     81.82    0.00
+
+  1750     100.00   98.36      98.56       100.00     100.00   100.00   0.00     100.00   0.00
+
+  1760     0.00     100.00     98.28       0.00       99.71    0.00     0.00     0.00     0.00
+
+  1770     0.00     98.08      97.53       0.00       99.59    0.00     0.00     100.00   0.00
+
+  1780     0.00     100.00     95.96       100.00     100.00   100.00   0.00     100.00   0.00
+
+  1790     0.00     100.00     95.62       0.00       99.03    0.00     0.00     100.00   0.00
+
+  1800     0.00     98.70      91.18       89.47      99.81    100.00   0.00     100.00   0.00
+
+  1810     0.00     0.00       93.55       0.00       98.85    100.00   0.00     93.33    0.00
+
+  1820     0.00     0.00       99.26       66.67      98.51    0.00     0.00     100.00   0.00
+
+  1830     0.00     0.00       94.77       100.00     96.43    83.33    0.00     100.00   0.00
+
+  1840     0.00     100.00     83.82       80.00      79.56    100.00   0.00     93.33    0.00
+
+  1850     0.00     0.00       91.57       0.00       70.59    0.00     0.00     11.11    0.00
+  -----------------------------------------------------------------------------------------------
+
+**20. Completeness Percentages for Total Disembarkation by Decade and
+Region**
+
+  -----------------------------------------------------------------------------------------------
+  Decade   Europe   Mainland   Caribbean   Spanish    Brazil   Africa   Middle   Asia     Other
+                    North                  Mainland                     East              
+                    America                Americas                                       
+  -------- -------- ---------- ----------- ---------- -------- -------- -------- -------- -------
+  1510     0.00     0.00       0.00        100.00     0.00     0.00     0.00     0.00     0.00
+
+  1520     0.00     0.00       100.00      0.00       0.00     0.00     0.00     0.00     0.00
+
+  1530     0.00     0.00       100.00      0.00       0.00     0.00     0.00     0.00     0.00
+
+  1540     0.00     0.00       100.00      100.00     0.00     0.00     0.00     100.00   0.00
+
+  1550     0.00     0.00       100.00      100.00     0.00     0.00     0.00     0.00     0.00
+
+  1560     0.00     0.00       100.00      100.00     0.00     0.00     0.00     0.00     0.00
+
+  1570     100.00   0.00       100.00      97.56      0.00     100.00   0.00     0.00     0.00
+
+  1580     100.00   0.00       100.00      100.00     100.00   0.00     0.00     100.00   0.00
+
+  1590     0.00     0.00       100.00      100.00     50.00    100.00   0.00     100.00   0.00
+
+  1600     100.00   0.00       100.00      100.00     100.00   100.00   0.00     100.00   0.00
+
+  1610     100.00   0.00       100.00      99.13      100.00   100.00   0.00     66.67    0.00
+
+  1620     0.00     0.00       100.00      99.04      100.00   0.00     0.00     100.00   0.00
+
+  1630     0.00     0.00       100.00      100.00     100.00   100.00   0.00     100.00   0.00
+
+  1640     0.00     0.00       96.88       100.00     100.00   0.00     0.00     100.00   0.00
+
+  1650     0.00     100.00     93.65       97.73      100.00   100.00   0.00     100.00   0.00
+
+  1660     100.00   100.00     94.96       100.00     100.00   100.00   0.00     0.00     0.00
+
+  1670     100.00   100.00     99.27       100.00     90.91    100.00   0.00     100.00   0.00
+
+  1680     0.00     77.78      98.37       100.00     100.00   0.00     0.00     0.00     0.00
+
+  1690     100.00   80.00      98.37       94.74      100.00   0.00     0.00     0.00     0.00
+
+  1700     0.00     90.91      85.71       100.00     99.58    0.00     0.00     50.00    0.00
+
+  1710     100.00   87.50      99.49       100.00     97.79    0.00     0.00     100.00   0.00
+
+  1720     100.00   96.55      95.79       100.00     100.00   0.00     0.00     96.43    0.00
+
+  1730     100.00   100.00     97.83       100.00     100.00   0.00     0.00     100.00   0.00
+
+  1740     100.00   93.88      98.33       100.00     100.00   0.00     0.00     81.82    0.00
+
+  1750     100.00   98.36      98.56       100.00     100.00   100.00   0.00     100.00   0.00
+
+  1760     0.00     100.00     98.28       0.00       99.71    0.00     0.00     0.00     0.00
+
+  1770     0.00     98.08      97.53       0.00       99.59    0.00     0.00     100.00   0.00
+
+  1780     0.00     100.00     95.96       100.00     100.00   100.00   0.00     100.00   0.00
+
+  1790     0.00     100.00     95.62       0.00       99.03    0.00     0.00     100.00   0.00
+
+  1800     0.00     98.70      91.18       89.47      99.81    100.00   0.00     100.00   0.00
+
+  1810     0.00     0.00       93.55       0.00       98.85    100.00   0.00     93.33    0.00
+
+  1820     0.00     0.00       99.26       66.67      98.51    0.00     0.00     100.00   0.00
+
+  1830     0.00     0.00       94.77       100.00     96.43    83.33    0.00     100.00   0.00
+
+  1840     0.00     100.00     83.82       80.00      79.56    100.00   0.00     93.33    0.00
+
+  1850     0.00     0.00       91.57       0.00       70.59    0.00     0.00     11.11    0.00
+  -----------------------------------------------------------------------------------------------
+
+**21. Completeness Percentages for Total Deaths by Decade and Region**
+
+  -----------------------------------------------------------------------------------------------
+  Decade   Europe   Mainland   Caribbean   Spanish    Brazil   Africa   Middle   Asia     Other
+                    North                  Mainland                     East              
+                    America                Americas                                       
+  -------- -------- ---------- ----------- ---------- -------- -------- -------- -------- -------
+  1510     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00     0.00
+
+  1520     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00     0.00
+
+  1530     0.00     0.00       80.00       0.00       0.00     0.00     0.00     0.00     0.00
+
+  1540     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00     0.00
+
+  1550     0.00     0.00       0.00        2.78       0.00     0.00     0.00     0.00     0.00
+
+  1560     0.00     0.00       28.57       5.56       0.00     0.00     0.00     0.00     0.00
+
+  1570     0.00     0.00       14.29       0.00       0.00     0.00     0.00     0.00     0.00
+
+  1580     0.00     0.00       0.00        1.37       0.00     0.00     0.00     0.00     0.00
+
+  1590     0.00     0.00       0.00        0.83       0.00     0.00     0.00     0.00     0.00
+
+  1600     0.00     0.00       0.00        2.78       0.00     0.00     0.00     0.00     0.00
+
+  1610     0.00     0.00       14.29       8.70       0.00     0.00     0.00     0.00     0.00
+
+  1620     0.00     0.00       50.00       1.92       0.00     0.00     0.00     0.00     0.00
+
+  1630     0.00     0.00       0.00        2.02       33.33    0.00     0.00     0.00     0.00
+
+  1640     0.00     0.00       6.25        16.67      15.38    0.00     0.00     0.00     0.00
+
+  1650     0.00     0.00       1.59        4.55       50.00    0.00     0.00     0.00     0.00
+
+  1660     0.00     0.00       1.68        12.50      0.00     0.00     0.00     0.00     0.00
+
+  1670     50.00    28.57      6.57        0.00       0.00     0.00     0.00     0.00     0.00
+
+  1680     0.00     11.11      15.22       0.00       0.00     0.00     0.00     0.00     0.00
+
+  1690     0.00     0.00       26.83       15.79      1.67     0.00     0.00     0.00     0.00
+
+  1700     0.00     27.27      31.22       4.00       0.42     0.00     0.00     0.00     0.00
+
+  1710     0.00     37.50      21.72       18.42      0.00     0.00     0.00     0.00     0.00
+
+  1720     0.00     20.69      18.95       22.73      1.49     0.00     0.00     0.00     0.00
+
+  1730     14.29    7.32       8.26        7.69       24.32    0.00     0.00     16.67    0.00
+
+  1740     0.00     2.04       7.50        0.00       12.31    0.00     0.00     0.00     0.00
+
+  1750     0.00     32.79      25.36       25.00      13.21    50.00    0.00     0.00     0.00
+
+  1760     0.00     22.41      29.23       0.00       13.29    0.00     0.00     0.00     0.00
+
+  1770     0.00     15.38      10.80       0.00       11.38    0.00     0.00     0.00     0.00
+
+  1780     0.00     0.00       29.29       100.00     18.07    0.00     0.00     66.67    0.00
+
+  1790     0.00     50.00      44.53       0.00       45.26    0.00     0.00     100.00   0.00
+
+  1800     0.00     48.05      23.53       42.11      54.10    0.00     0.00     0.00     0.00
+
+  1810     0.00     0.00       13.44       0.00       29.62    0.00     0.00     26.67    0.00
+
+  1820     0.00     0.00       26.10       33.33      57.14    0.00     0.00     47.62    0.00
+
+  1830     0.00     0.00       40.62       22.22      27.68    0.00     0.00     50.00    0.00
+
+  1840     0.00     0.00       19.12       10.00      31.56    0.00     0.00     20.00    0.00
+
+  1850     0.00     0.00       33.73       0.00       44.12    0.00     0.00     11.11    0.00
+
+  1860     0.00     0.00       52.38       0.00       0.00     0.00     0.00     0.00     0.00
+  -----------------------------------------------------------------------------------------------
+
+**22. Completeness Percentages for Female Embarkation by Decade and
+Region**
+
+  ----------------------------------------------------------------------------------------------
+  Decade   Europe   Mainland   Caribbean   Spanish    Brazil   Africa   Middle   Asia    Other
+                    North                  Mainland                     East             
+                    America                Americas                                      
+  -------- -------- ---------- ----------- ---------- -------- -------- -------- ------- -------
+  1510     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1520     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1530     0.00     0.00       20.00       0.00       0.00     0.00     0.00     0.00    0.00
+
+  1540     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1550     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1560     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1570     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1580     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1590     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1600     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1610     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1620     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1630     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1640     0.00     0.00       0.00        0.00       7.69     0.00     0.00     0.00    0.00
+
+  1650     0.00     0.00       3.17        2.27       0.00     33.33    0.00     0.00    0.00
+
+  1660     0.00     0.00       0.84        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1670     0.00     0.00       2.19        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1680     0.00     44.44      5.43        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1690     0.00     0.00       4.88        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1700     0.00     0.00       17.46       4.00       0.00     0.00     0.00     0.00    0.00
+
+  1710     100.00   12.50      11.11       5.26       7.52     0.00     0.00     33.33   0.00
+
+  1720     0.00     24.14      11.58       13.64      2.60     0.00     0.00     10.71   0.00
+
+  1730     0.00     0.00       3.48        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1740     0.00     0.00       7.50        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1750     0.00     0.00       8.13        0.00       1.26     50.00    0.00     0.00    0.00
+
+  1760     0.00     3.45       2.29        0.00       3.18     0.00     0.00     0.00    0.00
+
+  1770     0.00     0.00       2.78        0.00       14.23    0.00     0.00     0.00    0.00
+
+  1780     0.00     0.00       3.03        0.00       2.41     0.00     0.00     0.00    0.00
+
+  1790     0.00     0.00       29.20       0.00       0.00     0.00     0.00     0.00    0.00
+
+  1800     0.00     0.00       2.94        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1810     0.00     0.00       3.23        0.00       0.16     0.00     0.00     0.00    0.00
+
+  1820     0.00     0.00       5.15        0.00       3.62     0.00     0.00     4.76    0.00
+
+  1830     0.00     0.00       6.77        0.00       1.79     0.00     0.00     0.00    0.00
+
+  1840     0.00     0.00       8.82        0.00       9.33     0.00     0.00     6.67    0.00
+
+  1850     0.00     0.00       10.84       0.00       8.82     0.00     0.00     0.00    0.00
+
+  1860     0.00     0.00       21.43       0.00       0.00     0.00     0.00     0.00    0.00
+  ----------------------------------------------------------------------------------------------
+
+**23. Completeness Percentages for Female Disembarkation by Decade and
+Region**
+
+  ----------------------------------------------------------------------------------------------
+  Decade   Europe   Mainland   Caribbean   Spanish    Brazil   Africa   Middle   Asia    Other
+                    North                  Mainland                     East             
+                    America                Americas                                      
+  -------- -------- ---------- ----------- ---------- -------- -------- -------- ------- -------
+  1510     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1520     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1530     0.00     0.00       20.00       0.00       0.00     0.00     0.00     0.00    0.00
+
+  1540     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1550     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1560     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1570     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1580     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1590     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1600     0.00     0.00       0.00        4.17       0.00     0.00     0.00     0.00    0.00
+
+  1610     0.00     0.00       0.00        0.87       0.00     0.00     0.00     0.00    0.00
+
+  1620     0.00     0.00       0.00        0.96       0.00     0.00     0.00     0.00    0.00
+
+  1630     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1640     0.00     0.00       0.00        0.00       7.69     0.00     0.00     0.00    0.00
+
+  1650     0.00     0.00       3.17        2.27       0.00     33.33    0.00     0.00    0.00
+
+  1660     0.00     0.00       2.52        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1670     0.00     57.14      25.55       0.00       0.00     0.00     0.00     0.00    0.00
+
+  1680     0.00     44.44      25.00       0.00       0.00     0.00     0.00     0.00    0.00
+
+  1690     0.00     0.00       26.83       0.00       0.00     0.00     0.00     0.00    0.00
+
+  1700     0.00     27.27      35.98       12.00      0.00     0.00     0.00     0.00    0.00
+
+  1710     100.00   12.50      13.64       15.79      7.52     0.00     0.00     33.33   0.00
+
+  1720     0.00     24.14      14.74       86.36      2.60     0.00     0.00     10.71   0.00
+
+  1730     0.00     0.00       3.48        61.54      0.00     0.00     0.00     0.00    0.00
+
+  1740     0.00     0.00       10.00       0.00       0.00     0.00     0.00     0.00    0.00
+
+  1750     0.00     1.64       12.92       0.00       2.52     50.00    0.00     0.00    0.00
+
+  1760     0.00     5.17       13.75       0.00       3.18     0.00     0.00     0.00    0.00
+
+  1770     0.00     1.92       11.42       0.00       15.04    0.00     0.00     0.00    0.00
+
+  1780     0.00     0.00       15.15       0.00       4.82     0.00     0.00     33.33   0.00
+
+  1790     0.00     20.00      48.18       0.00       1.22     0.00     0.00     0.00    0.00
+
+  1800     0.00     15.58      32.35       15.79      0.19     0.00     0.00     0.00    0.00
+
+  1810     0.00     0.00       57.53       0.00       3.11     0.00     0.00     6.67    0.00
+
+  1820     0.00     0.00       23.16       0.00       12.58    0.00     0.00     9.52    0.00
+
+  1830     0.00     0.00       37.23       11.11      28.57    0.00     0.00     50.00   0.00
+
+  1840     0.00     0.00       17.65       0.00       20.00    0.00     0.00     13.33   0.00
+
+  1850     0.00     0.00       13.25       0.00       29.41    0.00     0.00     11.11   0.00
+
+  1860     0.00     0.00       35.71       0.00       0.00     0.00     0.00     0.00    0.00
+  ----------------------------------------------------------------------------------------------
+
+**24. Completeness Percentages for Female Deaths by Decade and Region**
+
+  ---------------------------------------------------------------------------------------------
+  Decade   Europe   Mainland   Caribbean   Spanish    Brazil   Africa   Middle   Asia   Other
+                    North                  Mainland                     East            
+                    America                Americas                                     
+  -------- -------- ---------- ----------- ---------- -------- -------- -------- ------ -------
+  1510     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1520     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1530     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1540     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1550     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1560     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1570     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1580     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1590     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1600     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1610     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1620     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1630     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1640     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1650     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1660     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1670     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1680     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1690     0.00     0.00       0.81        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1700     0.00     0.00       4.76        4.00       0.00     0.00     0.00     0.00   0.00
+
+  1710     0.00     0.00       3.03        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1720     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1730     0.00     0.00       1.74        7.69       0.00     0.00     0.00     0.00   0.00
+
+  1740     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1750     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1760     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1770     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1780     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1790     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1800     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1810     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1820     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1830     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1840     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1850     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1860     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+  ---------------------------------------------------------------------------------------------
+
+**25. Completeness Percentages for Girls Embarkation by Decade and
+Region**
+
+  ---------------------------------------------------------------------------------------------
+  Decade   Europe   Mainland   Caribbean   Spanish    Brazil   Africa   Middle   Asia   Other
+                    North                  Mainland                     East            
+                    America                Americas                                     
+  -------- -------- ---------- ----------- ---------- -------- -------- -------- ------ -------
+  1510     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1520     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1530     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1540     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1550     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1560     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1570     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1580     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1590     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1600     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1610     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1620     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1630     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1640     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1650     0.00     0.00       1.59        2.27       0.00     33.33    0.00     0.00   0.00
+
+  1660     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1670     0.00     0.00       1.46        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1680     0.00     22.22      2.72        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1690     0.00     0.00       3.25        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1700     0.00     0.00       12.17       4.00       0.00     0.00     0.00     0.00   0.00
+
+  1710     100.00   12.50      8.59        2.63       2.65     0.00     0.00     0.00   0.00
+
+  1720     0.00     17.24      9.47        9.09       1.86     0.00     0.00     0.00   0.00
+
+  1730     0.00     0.00       1.74        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1740     0.00     0.00       8.33        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1750     0.00     0.00       8.13        0.00       0.00     50.00    0.00     0.00   0.00
+
+  1760     0.00     3.45       2.29        0.00       2.60     0.00     0.00     0.00   0.00
+
+  1770     0.00     0.00       2.47        0.00       11.79    0.00     0.00     0.00   0.00
+
+  1780     0.00     0.00       2.02        0.00       2.41     0.00     0.00     0.00   0.00
+
+  1790     0.00     0.00       18.25       0.00       0.00     0.00     0.00     0.00   0.00
+
+  1800     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1810     0.00     0.00       0.54        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1820     0.00     0.00       3.31        0.00       3.62     0.00     0.00     4.76   0.00
+
+  1830     0.00     0.00       6.46        0.00       0.89     0.00     0.00     0.00   0.00
+
+  1840     0.00     0.00       2.94        0.00       4.00     0.00     0.00     6.67   0.00
+
+  1850     0.00     0.00       2.41        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1860     0.00     0.00       9.52        0.00       0.00     0.00     0.00     0.00   0.00
+  ---------------------------------------------------------------------------------------------
+
+**26. Completeness Percentages for Girls Disembarkation by Decade and
+Region**
+
+  ----------------------------------------------------------------------------------------------
+  Decade   Europe   Mainland   Caribbean   Spanish    Brazil   Africa   Middle   Asia    Other
+                    North                  Mainland                     East             
+                    America                Americas                                      
+  -------- -------- ---------- ----------- ---------- -------- -------- -------- ------- -------
+  1510     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1520     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1530     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1540     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1550     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1560     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1570     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1580     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1590     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1600     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1610     0.00     0.00       0.00        0.87       0.00     0.00     0.00     0.00    0.00
+
+  1620     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1630     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1640     0.00     0.00       0.00        0.00       7.69     0.00     0.00     0.00    0.00
+
+  1650     0.00     0.00       3.17        2.27       0.00     33.33    0.00     0.00    0.00
+
+  1660     0.00     0.00       2.52        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1670     0.00     57.14      24.82       0.00       0.00     0.00     0.00     0.00    0.00
+
+  1680     0.00     33.33      23.91       0.00       0.00     0.00     0.00     0.00    0.00
+
+  1690     0.00     0.00       24.39       0.00       0.00     0.00     0.00     0.00    0.00
+
+  1700     0.00     27.27      32.80       12.00      0.00     0.00     0.00     0.00    0.00
+
+  1710     100.00   12.50      11.62       15.79      7.52     0.00     0.00     33.33   0.00
+
+  1720     0.00     24.14      13.16       9.09       2.60     0.00     0.00     10.71   0.00
+
+  1730     0.00     0.00       2.61        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1740     0.00     0.00       9.17        0.00       0.00     0.00     0.00     0.00    0.00
+
+  1750     0.00     1.64       12.44       0.00       0.00     50.00    0.00     0.00    0.00
+
+  1760     0.00     5.17       7.74        0.00       2.89     0.00     0.00     0.00    0.00
+
+  1770     0.00     1.92       10.49       0.00       13.82    0.00     0.00     0.00    0.00
+
+  1780     0.00     0.00       14.14       0.00       3.61     0.00     0.00     0.00    0.00
+
+  1790     0.00     20.00      46.72       0.00       1.22     0.00     0.00     0.00    0.00
+
+  1800     0.00     15.58      30.88       10.53      0.19     0.00     0.00     0.00    0.00
+
+  1810     0.00     0.00       55.91       0.00       3.11     0.00     0.00     0.00    0.00
+
+  1820     0.00     0.00       20.96       0.00       12.15    0.00     0.00     9.52    0.00
+
+  1830     0.00     0.00       36.31       11.11      25.00    0.00     0.00     50.00   0.00
+
+  1840     0.00     0.00       16.18       0.00       14.67    0.00     0.00     13.33   0.00
+
+  1850     0.00     0.00       8.43        0.00       20.59    0.00     0.00     11.11   0.00
+
+  1860     0.00     0.00       16.67       0.00       0.00     0.00     0.00     0.00    0.00
+  ----------------------------------------------------------------------------------------------
+
+**27. Completeness Percentages for Girls Deaths by Decade and Region**
+
+  ---------------------------------------------------------------------------------------------
+  Decade   Europe   Mainland   Caribbean   Spanish    Brazil   Africa   Middle   Asia   Other
+                    North                  Mainland                     East            
+                    America                Americas                                     
+  -------- -------- ---------- ----------- ---------- -------- -------- -------- ------ -------
+  1510     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1520     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1530     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1540     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1550     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1560     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1570     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1580     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1590     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1600     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1610     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1620     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1630     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1640     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1650     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1660     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1670     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1680     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1690     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1700     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1710     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1720     0.00     0.00       0.53        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1730     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1740     0.00     0.00       0.83        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1750     0.00     0.00       3.83        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1760     0.00     1.72       1.43        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1770     0.00     0.00       0.93        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1780     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1790     0.00     0.00       2.92        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1800     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1810     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1820     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1830     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1840     0.00     0.00       0.00        0.00       0.00     0.00     0.00     6.67   0.00
+
+  1850     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+
+  1860     0.00     0.00       0.00        0.00       0.00     0.00     0.00     0.00   0.00
+  ---------------------------------------------------------------------------------------------
