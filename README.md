@@ -25,7 +25,7 @@ The project includes:
 
 - `data/` – Cleaned CSV files and lookup tables used in analysis
 - `scripts/` – Modular R scripts used for cleaning, shaping, and validation
-- - `sql/` – SQL queries used for data completeness auditing and visualization support
+- `sql/` – SQL queries used for data completeness auditing and visualization support
 - `visuals/` – Entity Relationship Diagram and Tableau screenshots
 - `final_report/` – Full Project Report and Appendices
 
