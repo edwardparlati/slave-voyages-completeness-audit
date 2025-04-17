@@ -41,6 +41,15 @@ The project includes:
 
 ---
 
+## Data Source
+
+The raw dataset and supporting documentation are available directly from the [Slave Voyages Project Downloads Page](https://www.slavevoyages.org/voyage/downloads):
+
+- **Dataset:** [tastdb-exp-2020.sav](https://www.slavevoyages.org/documents/download/tastdb-exp-2020.sav)  
+- **Codebook:** [SPSS_Codebook_2023-11-06.pdf](https://www.slavevoyages.org/documents/download/SPSS_Codebook_2023-11-06.pdf)
+
+These files were used to derive the cleaned, normalized dataset found in this repository.
+
 ## Key Findings
 
 - A significant portion of demographic data is missing for women and girls across embarkation and mortality fields, especially in early decades
