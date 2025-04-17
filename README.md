@@ -1,6 +1,8 @@
 # Completeness Assessment of the Slave Voyages Dataset
 
-This repository contains my capstone project for the [Google Data Analytics Certificate](https://www.coursera.org/professional-certificates/google-data-analytics). The project explores the completeness of key demographic fields in the Slave Voyages historical dataset, focusing on embarkation, disembarkation, and mortality data by gender, age, decade, and region.
+This repository contains a solo data analysis project focused on evaluating the completeness of key demographic fields within the Slave Voyages dataset. The analysis investigates gaps in records related to embarkation, disembarkation, and mortality—especially among women and girls—across decades and geographic regions.
+
+This project was initially inspired by a capstone prompt for the [Google Data Analytics Certificate](https://www.coursera.org/professional-certificates/google-data-analytics), and was significantly expanded to serve as a professional portfolio piece.
 
 ---
 
